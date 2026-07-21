@@ -1,39 +1,37 @@
 from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import SessionModel, TimelineEventModel
+from prometra.analyzer.stats import StatsCalculator
 
 class HealthAnalyzer:
     def __init__(self, storage: SQLiteStorage):
         self.storage = storage
+        self.stats = StatsCalculator(storage)
 
     def analyze(self, project_id: str):
-        db = self.storage.get_session()
-        try:
-            total_sessions = db.query(SessionModel).filter_by(project_id=project_id).count()
+        stats = self.stats.compute_project_stats(project_id)
+        
+        score = 100.0
+        findings = []
+        
+        if stats["total_sessions"] == 0:
+            score -= 50
+            findings.append("No active or past sessions found. Start tracking!")
+        else:
+            findings.append(f"Tracked {stats['total_sessions']} sessions.")
             
-            fs_events = db.query(TimelineEventModel).filter_by(normalized_event_type="filesystem").count()
-            git_events = db.query(TimelineEventModel).filter_by(normalized_event_type="git").count()
+        if stats["total_file_events"] == 0 and stats["total_git_events"] == 0:
+            score -= 20
+            findings.append("No file or git activity detected yet.")
+        else:
+            findings.append(f"Detected {stats['total_file_events']} file changes and {stats['total_git_events']} git events.")
             
-            score = 100.0
-            findings = []
+        if stats["dependency_changes"] > 10:
+            findings.append("High volume of dependency changes detected. Risk of instability.")
+            score -= 10
             
-            if total_sessions == 0:
-                score -= 50
-                findings.append("No active or past sessions found. Start tracking!")
-            else:
-                findings.append(f"Tracked {total_sessions} sessions.")
-                
-            if fs_events == 0 and git_events == 0:
-                score -= 20
-                findings.append("No file or git activity detected yet.")
-            else:
-                findings.append(f"Detected {fs_events} file changes and {git_events} git events.")
-                
-            return {
-                "status": "success",
-                "score": max(0.0, score),
-                "findings": findings,
-                "severity": "low" if score > 80 else "medium",
-                "recommendation": "Maintain regular tracking."
-            }
-        finally:
-            db.close()
+        return {
+            "status": "success",
+            "score": max(0.0, score),
+            "findings": findings,
+            "severity": "low" if score > 80 else "medium" if score > 50 else "high",
+            "recommendation": "Maintain regular tracking and commit often."
+        }

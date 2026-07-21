@@ -9,12 +9,21 @@ from prometra.tracker.session import SessionManager
 @pytest.fixture
 def storage():
     db_path = "/tmp/prometra_test_dt.db"
+    # Ensure directory exists on Windows
+    os.makedirs("/tmp", exist_ok=True)
     if os.path.exists(db_path):
-        os.remove(db_path)
+        try:
+            os.remove(db_path)
+        except PermissionError:
+            pass
     store = SQLiteStorage(db_path)
     yield store
+    store.engine.dispose()
     if os.path.exists(db_path):
-        os.remove(db_path)
+        try:
+            os.remove(db_path)
+        except PermissionError:
+            pass
 
 def test_utcnow_is_aware():
     now = utcnow()

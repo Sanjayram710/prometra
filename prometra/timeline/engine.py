@@ -39,6 +39,9 @@ class TimelineEngine:
                     insertions=event_data.get("insertions", 0),
                     deletions=event_data.get("deletions", 0),
                     changed_files=event_data.get("changed_files", []),
+                    merge_flag=event_data.get("merge_flag", False),
+                    tag=event_data.get("tag"),
+                    parent_commits=event_data.get("parent_commits", []),
                     source=event_data.get("source", "git")
                 )
                 db.add(git_event)
@@ -55,5 +58,39 @@ class TimelineEngine:
             )
             db.add(tl_event)
             db.commit()
+        finally:
+            db.close()
+
+    def get_events(self, limit: int = 100, offset: int = 0, session_id: str = None, event_type: str = None, after_timestamp=None):
+        db = self.storage.get_session()
+        try:
+            query = db.query(TimelineEventModel)
+            if session_id:
+                query = query.filter_by(session_id=session_id)
+            if event_type:
+                query = query.filter_by(normalized_event_type=event_type)
+            if after_timestamp:
+                query = query.filter(TimelineEventModel.timestamp >= after_timestamp)
+                
+            query = query.order_by(TimelineEventModel.sequence.asc())
+            if limit > 0:
+                query = query.limit(limit)
+            if offset > 0:
+                query = query.offset(offset)
+                
+            return query.all()
+        finally:
+            db.close()
+            
+    def get_related_event(self, event_id: str):
+        db = self.storage.get_session()
+        try:
+            fs_event = db.query(FilesystemEventModel).filter_by(event_id=event_id).first()
+            if fs_event:
+                return fs_event
+            git_event = db.query(GitEventModel).filter_by(event_id=event_id).first()
+            if git_event:
+                return git_event
+            return None
         finally:
             db.close()

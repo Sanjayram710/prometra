@@ -54,6 +54,11 @@ class GitTracker:
         insertions = 0
         deletions = 0
         changed_files = []
+        is_merge = len(commit.parents) > 1
+        parent_commits = [p.hexsha for p in commit.parents]
+        
+        tags = [tag.name for tag in self.repo.tags if tag.commit.hexsha == commit.hexsha]
+        tag_str = tags[0] if tags else None
         
         if commit.parents:
             parent = commit.parents[0]
@@ -79,11 +84,14 @@ class GitTracker:
             "repository": self.repo_path,
             "branch": self.get_current_branch() or "detached",
             "commit_id": commit.hexsha,
+            "parent_commits": parent_commits,
             "author": f"{commit.author.name} <{commit.author.email}>",
             "message": commit.message,
             "insertions": insertions,
             "deletions": deletions,
             "changed_files": list(set(changed_files)),
+            "merge_flag": is_merge,
+            "tag": tag_str,
             "source": "git",
             "summary": f"Git commit {commit.hexsha[:7]}: {commit.summary}"
         }

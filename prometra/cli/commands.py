@@ -107,3 +107,127 @@ def report():
     generator.generate_csv(project_id, ".prometra/reports/report.csv")
     generator.generate_html(project_id, ".prometra/reports/report.html")
     console.print("[green]Generated reports in .prometra/reports/[/green]")
+
+def status():
+    """Display current session and tracking status."""
+    project_id = os.path.basename(os.path.abspath("."))
+    storage = get_storage()
+    db = storage.get_session()
+    from prometra.storage.models import SessionModel, FilesystemEventModel, GitEventModel
+    try:
+        active = db.query(SessionModel).filter_by(project_id=project_id, status="active").first()
+        if active:
+            console.print(f"[green]Active session:[/green] {active.session_id}")
+            console.print(f"Project: {project_id}")
+            
+            from prometra.tracker.git import GitTracker
+            git_tracker = GitTracker(os.path.abspath("."), None, None)
+            console.print(f"Git branch: {git_tracker.get_current_branch()}")
+            console.print(f"SQLite path: {storage.db_path}")
+            
+            fs_count = db.query(FilesystemEventModel).filter_by(session_id=active.session_id).count()
+            git_count = db.query(GitEventModel).filter_by(session_id=active.session_id).count()
+            console.print(f"Files tracked in session: {fs_count}")
+            console.print(f"Git events in session: {git_count}")
+            
+            from prometra.core.time import utcnow
+            duration = int((utcnow() - active.start_ts).total_seconds())
+            console.print(f"Session duration: {duration}s")
+        else:
+            console.print("[yellow]No active session.[/yellow]")
+    finally:
+        db.close()
+
+def history(today: bool = typer.Option(False, "--today"), session_id: str = typer.Option(None, "--session"), json_out: bool = typer.Option(False, "--json")):
+    """Show previous sessions and high-level events."""
+    project_id = os.path.basename(os.path.abspath("."))
+    storage = get_storage()
+    db = storage.get_session()
+    from prometra.storage.models import SessionModel
+    try:
+        query = db.query(SessionModel).filter_by(project_id=project_id)
+        if session_id:
+            query = query.filter_by(session_id=session_id)
+            
+        sessions = query.all()
+        if json_out:
+            import json
+            console.print(json.dumps([{"session_id": s.session_id, "start": str(s.start_ts), "duration": s.duration_seconds} for s in sessions]))
+        else:
+            for s in sessions:
+                console.print(f"Session: {s.session_id} - Duration: {s.duration_seconds}s - Status: {s.status}")
+    finally:
+        db.close()
+
+def timeline(session_id: str = typer.Option(None, "--session"), today: bool = typer.Option(False, "--today"), json_out: bool = typer.Option(False, "--json"), markdown_out: bool = typer.Option(False, "--markdown")):
+    """Display chronological project history."""
+    storage = get_storage()
+    engine = TimelineEngine(storage)
+    events = engine.get_events(session_id=session_id)
+    
+    out = [{"time": str(e.timestamp), "type": e.normalized_event_type, "source": e.source, "summary": e.summary} for e in events]
+    if json_out:
+        import json
+        console.print(json.dumps(out))
+    elif markdown_out:
+        for e in out:
+            console.print(f"- {e['time']} **{e['type']}** ({e['source']}): {e['summary']}")
+    else:
+        for e in out:
+            console.print(f"{e['time']} | {e['type'].upper()} | {e['source']} | {e['summary']}")
+
+def doctor():
+    """Run diagnostics."""
+    console.print("[blue]Running Prometra diagnostics...[/blue]")
+    import sys
+    console.print(f"Python version: {sys.version.split(' ')[0]} - [green]OK[/green]")
+    
+    db_path = os.path.abspath(os.path.join(".prometra", "prometra.db"))
+    if os.path.exists(db_path):
+        console.print(f"SQLite database: {db_path} - [green]OK[/green]")
+    else:
+        console.print(f"SQLite database: {db_path} - [red]MISSING[/red]")
+        
+    if os.path.exists(".git"):
+        console.print("Git repository: [green]OK[/green]")
+    else:
+        console.print("Git repository: [yellow]MISSING[/yellow]")
+        
+    console.print("[green]Diagnostics complete.[/green]")
+
+def config():
+    """Show the effective configuration."""
+    from prometra.core.config import PrometraConfig
+    cfg = PrometraConfig()
+    console.print("[blue]Prometra Configuration:[/blue]")
+    for k, v in cfg.model_dump().items():
+        console.print(f"{k}: {v}")
+
+def version():
+    """Display Prometra version."""
+    console.print("Prometra Version: 1.0.0 (Local-First Completion)")
+    console.print("Schema Version: 1.0")
+
+def export():
+    """Export project tracking data to ZIP archive."""
+    import zipfile
+    project_id = os.path.basename(os.path.abspath("."))
+    report() # Ensure reports are generated
+    
+    export_dir = ".prometra/export"
+    os.makedirs(export_dir, exist_ok=True)
+    
+    zip_path = os.path.join(export_dir, f"prometra_export_{project_id}.zip")
+    with zipfile.ZipFile(zip_path, 'w') as zipf:
+        reports_path = ".prometra/reports"
+        if os.path.exists(reports_path):
+            for root, _, files in os.walk(reports_path):
+                for file in files:
+                    zipf.write(os.path.join(root, file), os.path.join("reports", file))
+                    
+        db_path = ".prometra/prometra.db"
+        if os.path.exists(db_path):
+            zipf.write(db_path, "prometra.db")
+            
+    console.print(f"[green]Exported to {zip_path}[/green]")
+
