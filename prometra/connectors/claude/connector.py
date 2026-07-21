@@ -75,16 +75,24 @@ class ClaudeConnector(BaseConnector):
         """Mock polling for Claude sessions."""
         pass
 
-    def _persist_event(self, event_type: str, summary: str, related_id: str = None):
+    def _persist_event(self, event: Any, related_id: str = None):
         if not self._storage:
+            return
+            
+        from prometra.ai.translators import ai_translator_registry
+        
+        generic_event = ai_translator_registry.translate("claude", event)
+        if not generic_event:
             return
             
         db = self._storage.get_session()
         try:
             max_seq = db.query(TimelineEventModel).count()
             
+            summary = f"{generic_event.event_type} from {generic_event.connector_name}"
+            
             tl_event = TimelineEventModel(
-                normalized_event_type=event_type,
+                normalized_event_type=generic_event.event_type,
                 timestamp=utcnow(),
                 sequence=max_seq + 1,
                 source="claude_connector",
