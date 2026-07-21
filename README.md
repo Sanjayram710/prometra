@@ -67,7 +67,7 @@ flowchart TD
 Clone the repository and install it in editable mode:
 
 ```bash
-git clone https://github.com/Developer/prometra.git
+git clone https://github.com/<username>/Prometra.git
 cd prometra
 pip install -e .
 ```
