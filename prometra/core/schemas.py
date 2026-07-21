@@ -1,9 +1,7 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel, Field
-
-def utcnow():
-    return datetime.now(timezone.utc)
+from prometra.core.time import utcnow
 
 class Workspace(BaseModel):
     project_id: str

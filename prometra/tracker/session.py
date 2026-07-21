@@ -1,32 +1,43 @@
 import os
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional, List
 from prometra.core.schemas import Session, Workspace
 from prometra.storage.sqlite import SQLiteStorage
 from prometra.storage.models import SessionModel, WorkspaceModel
-
-def utcnow():
-    return datetime.now(timezone.utc)
+from prometra.core.time import utcnow
 
 class SessionManager:
     def __init__(self, storage: SQLiteStorage):
         self.storage = storage
 
-    def start_session(self, project_id: str, project_path: str, working_directory: str) -> Session:
+    def recover_stale_sessions(self, project_id: str):
         db = self.storage.get_session()
         try:
-            active = db.query(SessionModel).filter_by(project_id=project_id, status="active").first()
-            if active:
-                # Mock returning existing
-                pass
-            
+            active_sessions = db.query(SessionModel).filter_by(project_id=project_id, status="active").all()
+            for s in active_sessions:
+                s.status = "completed"
+                s.end_ts = utcnow()
+                s.duration_seconds = int((s.end_ts - s.start_ts).total_seconds())
+                warnings = s.warnings or []
+                if "Recovered stale session" not in warnings:
+                    warnings.append("Recovered stale session")
+                s.warnings = warnings
+            db.commit()
+        finally:
+            db.close()
+
+    def start_session(self, project_id: str, project_path: str, working_directory: str, config_snapshot: Optional[dict] = None) -> Session:
+        self.recover_stale_sessions(project_id)
+        db = self.storage.get_session()
+        try:
             session_id = str(uuid.uuid4())
             new_session = Session(
                 session_id=session_id,
                 project_id=project_id,
                 project_path=project_path,
-                working_directory=working_directory
+                working_directory=working_directory,
+                config_snapshot=config_snapshot or {}
             )
             
             ws = db.query(WorkspaceModel).filter_by(project_id=project_id).first()
@@ -47,7 +58,8 @@ class SessionManager:
                 start_ts=new_session.start_ts,
                 project_path=new_session.project_path,
                 working_directory=new_session.working_directory,
-                status=new_session.status
+                status=new_session.status,
+                config_snapshot=new_session.config_snapshot
             )
             db.add(session_model)
             db.commit()

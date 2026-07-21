@@ -1,7 +1,27 @@
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, JSON, ForeignKey
+import datetime
+from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, JSON, ForeignKey, TypeDecorator
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
+class AwareDateTime(TypeDecorator):
+    """
+    Ensure datetimes are timezone-aware and stored in UTC.
+    """
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            if not value.tzinfo:
+                raise TypeError("tz-naive datetime objects are not allowed.")
+            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return value.replace(tzinfo=datetime.timezone.utc)
+        return value
 
 class WorkspaceModel(Base):
     __tablename__ = "workspaces"
@@ -15,8 +35,8 @@ class WorkspaceModel(Base):
     environment = Column(String)
     framework = Column(String)
     languages = Column(JSON)
-    created_at = Column(DateTime)
-    updated_at = Column(DateTime)
+    created_at = Column(AwareDateTime)
+    updated_at = Column(AwareDateTime)
     status = Column(String)
     configuration_version = Column(String)
     privacy_mode = Column(String)
@@ -25,8 +45,8 @@ class SessionModel(Base):
     __tablename__ = "sessions"
     session_id = Column(String, primary_key=True)
     project_id = Column(String, ForeignKey("workspaces.project_id"), nullable=False)
-    start_ts = Column(DateTime, nullable=False)
-    end_ts = Column(DateTime)
+    start_ts = Column(AwareDateTime, nullable=False)
+    end_ts = Column(AwareDateTime)
     duration_seconds = Column(Integer)
     project_path = Column(String, nullable=False)
     working_directory = Column(String, nullable=False)
@@ -49,7 +69,7 @@ class FilesystemEventModel(Base):
     event_id = Column(String, primary_key=True)
     session_id = Column(String, ForeignKey("sessions.session_id"), nullable=False)
     project_id = Column(String, ForeignKey("workspaces.project_id"), nullable=False)
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = Column(AwareDateTime, nullable=False)
     path = Column(String, nullable=False)
     normalized_relative_path = Column(String, nullable=False)
     operation = Column(String, nullable=False)
@@ -72,7 +92,7 @@ class GitEventModel(Base):
     author = Column(String)
     committer = Column(String)
     message = Column(String)
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = Column(AwareDateTime, nullable=False)
     changed_files = Column(JSON)
     insertions = Column(Integer)
     deletions = Column(Integer)
@@ -86,7 +106,7 @@ class TimelineEventModel(Base):
     __tablename__ = "timeline_events"
     id = Column(Integer, primary_key=True, autoincrement=True)
     normalized_event_type = Column(String, nullable=False)
-    timestamp = Column(DateTime, nullable=False)
+    timestamp = Column(AwareDateTime, nullable=False)
     sequence = Column(Integer, nullable=False)
     source = Column(String, nullable=False)
     actor_tool = Column(String)
