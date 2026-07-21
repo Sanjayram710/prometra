@@ -21,3 +21,11 @@ The Typer CLI exposes the following utilities:
 - `prometra config`: Print current config variables.
 - `prometra version`: Print application and DB schema versions.
 - `prometra export`: Run report generation and package everything into `.prometra/export/prometra_export_<proj>.zip`.
+
+## Connectors (V2 SDK)
+- `prometra connectors list`: Show all discovered external connectors via Python `entry_points`.
+- `prometra connectors info <name>`: View specific connector metadata and capabilities.
+- `prometra connectors enable <name>`: Turn on an installed AI connector.
+- `prometra connectors disable <name>`: Turn off an installed AI connector.
+- `prometra connectors health`: Ping all enabled connectors and report their HTTP/Socket health.
+- `prometra connectors validate`: Run configuration and schema checks against installed plugins.

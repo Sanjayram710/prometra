@@ -26,6 +26,9 @@ dependencies = [
 [project.scripts]
 prometra = "prometra.cli.main:app"
 
+[project.entry-points."prometra.connectors"]
+claude = "prometra.connectors.claude.connector:ClaudeConnector"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",

@@ -16,5 +16,8 @@ app.command(name="config")(commands.config)
 app.command(name="version")(commands.version)
 app.command(name="export")(commands.export)
 
+from prometra.cli.connectors_cmd import app as connectors_app
+app.add_typer(connectors_app, name="connectors")
+
 if __name__ == "__main__":
     app()
