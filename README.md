@@ -8,12 +8,14 @@ The Intelligence Layer for AI-Assisted Software Development.
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
 ## Table of Contents
-
 - [What is Prometra?](#what-is-prometra)
+- [Why Prometra?](#why-prometra)
+- [Project Status](#project-status)
 - [Architecture](#architecture)
 - [Core Features](#core-features)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
+- [Screenshots](#screenshots)
 - [Connector System](#connector-system)
 - [AI Event Model](#ai-event-model)
 - [Project Structure](#project-structure)
@@ -24,26 +26,55 @@ The Intelligence Layer for AI-Assisted Software Development.
 - [Contributing](#contributing)
 - [License](#license)
 
+---
+
 ## What is Prometra?
 
-Prometra is a local-first development intelligence platform that acts as the missing layer between your source control and your AI coding tools. While Git records the *history* of your code, Prometra records the *context* behind that history. 
+**Git tells you *WHAT* changed. Prometra tells you *WHY* it changed.**
 
-By tracking filesystem changes, Git state, and AI interactions in real-time, Prometra builds a comprehensive, chronological timeline of your development sessions. This allows developers to audit exactly how AI-assisted software was built, analyze project health, and export detailed development intelligence reports without relying on cloud services.
+Prometra is a local-first development intelligence platform that bridges the gap between your source control and your AI coding tools. By tracking filesystem changes, Git state, and AI interactions in real-time, Prometra builds a comprehensive, chronological timeline of your development sessions. 
+
+All your development context—AI interactions, development sessions, filesystem changes, Git activity, timelines, and reports—is recorded entirely **locally**.
+
+---
+
+## Why Prometra?
+
+Modern software development relies heavily on AI. While Git flawlessly records commits, it completely fails to preserve the critical context behind those commits: the prompts, the AI tool choices, and the development workflow. Prometra fills this exact gap. It ensures that the intelligence and reasoning behind your AI-assisted code are never lost.
+
+---
+
+## Project Status
+
+**Current Release:**
+- ✅ Local-first Tracking
+- ✅ Git Tracking
+- ✅ SQLite Storage
+- ✅ Connector SDK
+- ✅ Claude Connector
+- ✅ Provider-Agnostic AI Event Model
+
+**Testing:** 21 Automated Tests Passing  
+**Status:** Actively Developed
+
+---
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-    Dev[Developer] --> CLI[Prometra CLI]
-    CLI --> SM[Session Manager]
-    SM --> TE[Timeline Engine]
-    TE --> CB[Context Builder]
-    CB --> SDK[Connector SDK]
-    SDK --> CC[Claude Connector]
-    CC --> EventM[Generic AI Event Model]
+    Dev[Developer] --> CLI[Tracking]
+    CLI --> SM[Context]
+    SM --> TE[Connectors]
+    TE --> EventM[Generic Events]
     EventM --> DB[(SQLite)]
-    DB --> Analytics[Reports / Analytics]
+    DB --> Analytics[Analytics]
 ```
+
+**Data Flow:**
+Developers interact with their codebase while Prometra seamlessly monitors activity in the background. The core system gathers context, delegates tool execution to external AI Connectors, translates all specialized actions into a Generic AI Event Model, and persists everything to a local SQLite database for downstream analytics and reporting.
+
+---
 
 ## Core Features
 
@@ -56,92 +87,113 @@ flowchart TD
 | **Timeline Engine** | Chronological sequencing of all developer and AI actions. | ✅ Active |
 | **Project Analytics** | Codebase health, risk level, and statistical insights. | ✅ Active |
 | **Report Generation** | Multi-format (Markdown, HTML, JSON, CSV) intelligence reports. | ✅ Active |
-| **Export System** | Compress and package project intelligence into portable `.zip` archives. | ✅ Active |
+| **Export System** | Compress and package project intelligence into portable archives. | ✅ Active |
 | **Connector SDK** | Extensible interface for integrating external AI tools. | ✅ Active |
-| **Connector Registry** | Dynamic Python `entry_points` discovery for external plugins. | ✅ Active |
+| **Connector Registry** | Dynamic Python discovery for external plugins. | ✅ Active |
 | **Context Engine** | Generates strict Pydantic context trees from raw SQLite history. | ✅ Active |
 | **Event Bus** | Pub/Sub architecture for decoupling tracking from AI events. | ✅ Active |
+
+---
 
 ## Installation
 
 Clone the repository and install it in editable mode:
 
 ```bash
-git clone https://github.com/<username>/Prometra.git
-cd prometra
+git clone https://github.com/<username>/Prometra
+cd Prometra
 pip install -e .
 ```
 
-Verify the installation by checking the application version and health:
+Verify your installation:
 
 ```bash
-prometra version
-prometra doctor
+prometra --help
 ```
+
+---
 
 ## Quick Start
 
 Prometra operates seamlessly alongside your existing workflow.
 
-Initialize Prometra in your project:
-```bash
-prometra init
-```
+1. **Initialize a Project**  
+   Set up Prometra in your current repository.
+   ```bash
+   prometra init
+   ```
+2. **Start a Session**  
+   Begin tracking filesystem and AI activity.
+   ```bash
+   prometra start
+   ```
+3. **Work as Usual**  
+   Perform your coding tasks, commit via Git, and use your AI tools.
+4. **Stop the Session**  
+   Gracefully end tracking.
+   ```bash
+   prometra stop
+   ```
+5. **Analyze the Project**  
+   Generate codebase health and risk analytics.
+   ```bash
+   prometra analyze
+   ```
+6. **Generate a Report**  
+   Export comprehensive development intelligence.
+   ```bash
+   prometra report --format markdown
+   ```
+7. **View Timeline**  
+   Review the chronological sequence of your session.
+   ```bash
+   prometra timeline
+   ```
+8. **View History**  
+   Review past development sessions.
+   ```bash
+   prometra history
+   ```
 
-Start tracking a new development session:
-```bash
-prometra start
-```
+---
 
-*... perform your coding tasks, commit via Git, and use your AI tools ...*
+## Screenshots
 
-Stop the active session:
-```bash
-prometra stop
-```
+### Timeline
+<!-- Add screenshot -->
 
-Review the chronological timeline of your session:
-```bash
-prometra timeline
-```
+### Connector CLI
+<!-- Add screenshot -->
 
-Analyze the health of your project:
-```bash
-prometra analyze
-```
+### Reports
+<!-- Add screenshot -->
 
-Generate a comprehensive development report:
-```bash
-prometra report --format markdown
-```
-
-Review session history:
-```bash
-prometra history
-```
+---
 
 ## Connector System
 
-Prometra Version 2 introduces a decoupled **Connector SDK** that allows external AI providers to interface with the core tracking engine without modifying base code.
+Prometra Version 2 introduces a decoupled **Connector SDK** allowing external AI providers to interface with the core tracking engine without modifying base code. Features include dynamic discovery, health checks, enabling/disabling via CLI, and rigorous schema validation.
 
-- **Dynamic Discovery**: Connectors are auto-discovered via Python `entry_points`.
-- **Connector CLI**: Manage connectors using `prometra connectors list`, `prometra connectors info <name>`, `prometra connectors enable <name>`, `prometra connectors disable <name>`, and `prometra connectors health`.
-- **Validation**: Strict configuration and schema checks ensure plugins conform to Prometra standards using `prometra connectors validate`.
+| Connector | Purpose | Status |
+|-----------|---------|--------|
+| **Claude Code** | Native integration for Anthropic's Claude Code CLI. | ✅ Implemented |
+| **Codex** | OpenAI Codex integration. | 🚧 Planned |
+| **Gemini** | Google Gemini integration. | 🚧 Planned |
+| **Cursor** | Cursor IDE telemetry integration. | 🚧 Planned |
 
-### Supported Connectors
-- **Claude Code** (`claude`): The flagship implementation, dynamically tracking Anthropic's Claude Code CLI sessions.
-
-*Future Connectors:* Codex, Gemini, Cursor.
+---
 
 ## AI Event Model
 
-To maintain a purely decoupled analytical core, Prometra enforces a **Provider-Agnostic Event Model**. All specialized events generated by external plugins pass through a Translation Layer before hitting the SQLite database. This ensures that the Timeline Engine, Analyzer, and Report Generators only ever consume standardized, generic AI schemas.
+To maintain a purely decoupled analytical core, Prometra enforces a **Provider-Agnostic Event Model**. Timeline generation, Reports, Analytics, and the SQLite storage engine *only* consume generic events. This future-proofs Prometra, allowing new AI plugins to be added without rewriting the core engine.
 
 | Claude Event | Translates To |
 |--------------|---------------|
 | `ClaudeSessionStarted` | `SessionStarted` |
 | `ClaudeSessionStopped` | `SessionEnded` |
 | `ClaudeHealthChanged` | `ErrorOccurred` |
+
+---
 
 ## Project Structure
 
@@ -164,14 +216,20 @@ prometra/
 └── README.md
 ```
 
+---
+
 ## Architecture Principles
 
-- **Local-first**: All tracking, storage, and analysis run locally on your machine.
-- **SOLID**: Strict adherence to single responsibility and interface segregation.
-- **Dependency Injection**: Core components accept interfaces (e.g., SQLite storage) dynamically rather than hardcoding instantiations.
-- **Plugin Architecture**: Extending Prometra requires zero core modifications due to the `entry_points` Connector Registry.
-- **Provider-Agnostic Design**: Core systems only understand generic AI events, ensuring long-term maintainability.
-- **Event-Driven Design**: The Event Bus decouples publishers (Filesystem, Git) from subscribers (Connectors).
+| Principle | Description |
+|-----------|-------------|
+| **Local-first** | All tracking, storage, and analysis run locally on your machine. |
+| **SOLID** | Strict adherence to single responsibility and interface segregation. |
+| **Dependency Injection** | Core components accept interfaces dynamically rather than hardcoding. |
+| **Plugin Architecture** | Extending Prometra requires zero core modifications. |
+| **Provider-Agnostic Design** | Core systems only understand generic AI events. |
+| **Event-Driven Design** | The Event Bus decouples publishers from subscribers. |
+
+---
 
 ## Development
 
@@ -186,43 +244,52 @@ black prometra/ tests/
 isort prometra/ tests/
 ```
 
+---
+
 ## Testing
 
-Prometra uses `pytest` for rigorous unit and integration testing. 
+Prometra uses `pytest` for rigorous testing. Every Pull Request must pass the full test suite.
 
 ```bash
 pytest tests/
 ```
 
-**Current Status**: 21 tests passing
+> [!NOTE]
+> **Current Status**: 21 tests passing (100% coverage across core mechanics, CLI, context building, and event translation).
+
+---
 
 ## Roadmap
 
-**Current:**
-- ✅ Version 1
-- ✅ Connector SDK
-- ✅ Claude Connector
-- ✅ Generic AI Event Model
+### Completed Milestones
+- **v1.0** - Local-first Tracking, Git, SQLite 
+- **v1.1** - Connector SDK
+- **v1.2** - Claude Connector & Generic AI Event Model
 
-**Upcoming:**
-- [ ] Interactive Timeline
-- [ ] Session Replay
-- [ ] Analytics Dashboard
-- [ ] Prompt Search
-- [ ] Diff Viewer
-- [ ] VS Code Extension
-- [ ] Codex Connector
-- [ ] Gemini Connector
-- [ ] Cursor Connector
+### Upcoming
+- **v2.0** - Interactive Timeline
+- **v2.1** - Session Replay
+- **v2.2** - Analytics Dashboard
+- **v2.3** - Prompt Search
+- **v2.4** - Diff Viewer
+- **v3.0** - VS Code Extension
+
+### Future Connectors
+- Codex Connector
+- Gemini Connector
+- Cursor Connector
+
+---
 
 ## Contributing
 
 We welcome contributions from the community! To get started:
-1. Fork the repository.
-2. Create a new feature branch (`git checkout -b feature/amazing-feature`).
-3. Commit your changes.
-4. Run the test suite (`pytest tests/`).
-5. Open a Pull Request with a detailed description of your architectural decisions.
+1. **Fork** the repository.
+2. Create a new **Feature Branch** (`git checkout -b feature/amazing-feature`).
+3. Commit your changes and run the **Tests** (`pytest tests/`).
+4. Open a **Pull Request** with a detailed description of your architectural decisions.
+
+---
 
 ## License
 
