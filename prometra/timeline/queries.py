@@ -2,7 +2,7 @@ import datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy import or_, func
 from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, GitEventModel, SessionModel
+from prometra.storage.models import TimelineEventModel, FilesystemEventModel, GitEventModel, SessionModel, AiEventModel
 from prometra.timeline.filters import TimelineFilter
 
 class TimelineQueryEngine:
@@ -30,10 +30,12 @@ class TimelineQueryEngine:
                     or_(
                         TimelineEventModel.normalized_event_type.ilike("%ai%"),
                         TimelineEventModel.normalized_event_type.in_([
-                            "PromptSubmitted", "ResponseReceived", "ToolInvocation",
-                            "ModelSelected", "ContextBuilt", "TokenUsage",
-                            "LatencyMeasured", "SessionStarted", "SessionEnded",
-                            "ErrorOccurred", "ai_event"
+                            "PromptSubmitted", "PromptUpdated", "ResponseStarted", "ResponseReceived",
+                            "ResponseCompleted", "ToolInvocationStarted", "ToolInvocationCompleted",
+                            "ToolInvocationFailed", "ToolInvocation", "TokenUsage", "CostRecorded",
+                            "ModelChanged", "ModelSelected", "ContextInjected", "ContextBuilt",
+                            "LatencyMeasured", "SessionStarted", "SessionEnded", "ErrorOccurred",
+                            "RetryAttempt", "ConnectorConnected", "ConnectorDisconnected", "ai_event"
                         ]),
                         TimelineEventModel.source.ilike("%claude%"),
                         TimelineEventModel.actor_tool.isnot(None)
@@ -118,6 +120,13 @@ class TimelineQueryEngine:
             files_modified = 0
             git_commits = 0
             ai_events = 0
+            ai_prompts = 0
+            ai_responses = 0
+            tool_calls = 0
+            input_tokens = 0
+            output_tokens = 0
+            total_tokens = 0
+            estimated_cost = 0.0
             connectors = set()
             
             for e in events:
@@ -133,15 +142,28 @@ class TimelineQueryEngine:
                     files_modified += 1
                 elif "git" in net:
                     git_commits += 1
-                elif "ai" in net or net in [
-                    "promptsubmitted", "responsereceived", "toolinvocation",
-                    "modelselected", "contextbuilt", "tokenusage",
-                    "latencymeasured", "sessionstarted", "sessionended",
-                    "erroroccurred"
-                ] or e.actor_tool:
+                elif any(k in net for k in ["prompt", "response", "tool", "ai", "model", "context", "token", "cost", "error", "session", "connector"]) or e.actor_tool:
                     ai_events += 1
+                    if "prompt" in net:
+                        ai_prompts += 1
+                    elif "response" in net:
+                        ai_responses += 1
+                    elif "tool" in net:
+                        tool_calls += 1
+
+            # Fetch detailed AI event metrics from AiEventModel if present
+            ai_db_records = db.query(AiEventModel).all()
+            for r in ai_db_records:
+                if r.cost:
+                    estimated_cost += r.cost
+                if r.token_usage and isinstance(r.token_usage, dict):
+                    in_t = r.token_usage.get("prompt_tokens", 0)
+                    out_t = r.token_usage.get("completion_tokens", 0)
+                    tot_t = r.token_usage.get("total_tokens", 0) or (in_t + out_t)
+                    input_tokens += in_t
+                    output_tokens += out_t
+                    total_tokens += tot_t
                     
-            # Also check session count from SessionModel if session set is empty but total sessions in DB exist
             if not sessions and not filters.session_id and not filters.search and not filters.event_type:
                 all_sessions_count = db.query(SessionModel).count()
                 sessions_count = all_sessions_count
@@ -154,6 +176,13 @@ class TimelineQueryEngine:
                 "files_modified": files_modified,
                 "git_commits": git_commits,
                 "ai_events": ai_events,
+                "ai_prompts": ai_prompts,
+                "ai_responses": ai_responses,
+                "tool_calls": tool_calls,
+                "total_tokens": total_tokens,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "estimated_cost": round(estimated_cost, 4),
                 "connectors_used": sorted(list(connectors))
             }
         finally:
@@ -185,9 +214,7 @@ class TimelineQueryEngine:
                         
                 files_changed = sum(1 for e in sess_events if "filesystem" in (e.normalized_event_type or "").lower())
                 git_commits = sum(1 for e in sess_events if "git" in (e.normalized_event_type or "").lower())
-                ai_events = sum(1 for e in sess_events if "ai" in (e.normalized_event_type or "").lower() or e.actor_tool or (e.normalized_event_type or "") in [
-                    "PromptSubmitted", "ResponseReceived", "ToolInvocation", "ModelSelected", "ContextBuilt", "TokenUsage", "LatencyMeasured"
-                ])
+                ai_events = sum(1 for e in sess_events if any(k in (e.normalized_event_type or "").lower() for k in ["ai", "prompt", "response", "tool", "model", "token"]) or e.actor_tool)
                 
                 result.append({
                     "session_id": sess_id,

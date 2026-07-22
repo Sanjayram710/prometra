@@ -9,6 +9,10 @@ from prometra.timeline.engine import TimelineEngine
 from prometra.timeline.filters import TimelineFilter
 from prometra.timeline.formatter import TimelineFormatter
 from prometra.timeline.renderer import TimelineRenderer
+from prometra.replay.engine import ReplayEngine
+from prometra.replay.player import ReplayPlayer
+from prometra.replay.formatter import ReplayFormatter
+from prometra.replay.exporter import ReplayExporter
 from prometra.tracker.filesystem import FilesystemTracker
 from prometra.tracker.git import GitTracker
 from prometra.analyzer.health import HealthAnalyzer
@@ -220,6 +224,43 @@ def timeline(
     else:
         renderer.render_table(events)
 
+def replay(
+    session_id: Optional[str] = typer.Option(None, "--session", help="Session ID to replay"),
+    latest: bool = typer.Option(False, "--latest", help="Replay the most recent session"),
+    speed: str = typer.Option("instant", "--speed", help="Playback speed (1x, 2x, 5x, 10x, instant)"),
+    step: bool = typer.Option(False, "--step", help="Pause after every event (step mode)"),
+    json_out: bool = typer.Option(False, "--json", help="Output replay as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output replay as Markdown"),
+    export: Optional[str] = typer.Option(None, "--export", help="Export replay to file (.md, .json)")
+):
+    """Reconstruct and replay an entire development session from recorded events."""
+    storage = get_storage()
+    engine = ReplayEngine(storage)
+
+    target_session_id = engine.resolve_session_id(session_id=session_id, latest=latest)
+    if not target_session_id:
+        console.print("[yellow]No session found to replay.[/yellow]")
+        return
+
+    session_info = engine.get_session_info(target_session_id)
+    events = engine.get_session_events(target_session_id)
+
+    if export:
+        file_path = ReplayExporter.export(session_info, events, export)
+        console.print(f"[green]Exported session replay to {file_path}[/green]")
+        return
+
+    if json_out:
+        console.print(ReplayFormatter.to_json(session_info, events))
+        return
+
+    if markdown_out:
+        console.print(ReplayFormatter.to_markdown(session_info, events))
+        return
+
+    player = ReplayPlayer()
+    player.play(events, session_info, speed=speed, step=step)
+
 def doctor():
     """Run diagnostics."""
     console.print("[blue]Running Prometra diagnostics...[/blue]")
@@ -249,7 +290,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.2.0")
+    console.print("Prometra Version: 1.3.0")
     console.print("Schema Version: 1.0")
 
 def export():

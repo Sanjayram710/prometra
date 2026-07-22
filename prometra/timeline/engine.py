@@ -1,19 +1,90 @@
 import uuid
+import datetime
 from typing import List, Dict, Any, Optional
 from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, GitEventModel
+from prometra.storage.models import TimelineEventModel, FilesystemEventModel, GitEventModel, AiEventModel
 from prometra.timeline.filters import TimelineFilter
 from prometra.timeline.queries import TimelineQueryEngine
 from prometra.timeline.formatter import TimelineFormatter
 from prometra.timeline.summary import TimelineSummaryGenerator, SummaryMetrics
+from prometra.connectors.events import EventBus, BaseEvent
+from prometra.ai.events import AiEvent
+from prometra.core.time import utcnow
 
 class TimelineEngine:
     """Core engine for timeline recording, querying, filtering, summary, and formatting."""
 
-    def __init__(self, storage: SQLiteStorage):
+    def __init__(self, storage: SQLiteStorage, event_bus: Optional[EventBus] = None):
         self.storage = storage
         self.query_engine = TimelineQueryEngine(storage)
         self.summary_generator = TimelineSummaryGenerator(self.query_engine)
+        self._event_bus = None
+        if event_bus:
+            self.attach_event_bus(event_bus)
+
+    def attach_event_bus(self, event_bus: EventBus):
+        """Subscribe to event bus for automatic AI event persistence."""
+        self._event_bus = event_bus
+        self._event_bus.subscribe("*", self.handle_bus_event)
+
+    def handle_bus_event(self, event: BaseEvent):
+        """Handler for events published on EventBus."""
+        if isinstance(event, AiEvent):
+            self.append_ai_event(event)
+
+    def append_ai_event(self, ai_event: AiEvent):
+        """Persist a generic AI event in AiEventModel and unified TimelineEventModel."""
+        db = self.storage.get_session()
+        try:
+            max_seq = db.query(TimelineEventModel).count()
+            specific_event_id = str(uuid.uuid4())
+            
+            # Parse timestamp if string or datetime
+            if isinstance(ai_event.timestamp, str) and ai_event.timestamp:
+                try:
+                    ts = datetime.datetime.fromisoformat(ai_event.timestamp)
+                except Exception:
+                    ts = utcnow()
+            elif isinstance(ai_event.timestamp, datetime.datetime):
+                ts = ai_event.timestamp
+            else:
+                ts = utcnow()
+
+            token_dict = ai_event.tokens.model_dump() if ai_event.tokens else None
+            desc = ai_event.get_description()
+
+            # Save in AiEventModel
+            ai_db_record = AiEventModel(
+                event_id=specific_event_id,
+                session_id=ai_event.session_id,
+                timestamp=ts,
+                event_type=ai_event.event_type,
+                connector=ai_event.connector_name,
+                model_name=ai_event.model_name,
+                prompt_id=ai_event.prompt_id,
+                tool_name=ai_event.tool_name,
+                token_usage=token_dict,
+                cost=ai_event.cost,
+                description=desc,
+                extra_metadata=ai_event.metadata
+            )
+            db.add(ai_db_record)
+
+            # Save in unified TimelineEventModel
+            tl_event = TimelineEventModel(
+                normalized_event_type=ai_event.event_type,
+                timestamp=ts,
+                sequence=max_seq + 1,
+                source=ai_event.connector_name,
+                actor_tool=ai_event.connector_name,
+                session_id=ai_event.session_id,
+                related_event_ids=[specific_event_id],
+                summary=desc
+            )
+            db.add(tl_event)
+            db.commit()
+        finally:
+            db.close()
 
     def append_event(self, event_data: dict):
         """Record a timeline event and any underlying specific event."""
@@ -31,18 +102,18 @@ class TimelineEngine:
                     session_id=event_data.get("session_id") or "default_session",
                     project_id=event_data.get("project_id") or "default_project",
                     timestamp=event_data.get("timestamp"),
-                    path=event_data.get("path"),
-                    normalized_relative_path=event_data.get("normalized_relative_path"),
-                    operation=event_data.get("operation"),
+                    path=event_data.get("path") or "unknown",
+                    normalized_relative_path=event_data.get("normalized_relative_path") or "unknown",
+                    operation=event_data.get("operation") or "modified",
                     source=event_data.get("source", "filesystem")
                 )
                 db.add(fs_event)
             elif event_type == "git":
                 git_event = GitEventModel(
                     event_id=specific_event_id,
-                    repository=event_data.get("repository"),
-                    branch=event_data.get("branch"),
-                    commit_id=event_data.get("commit_id"),
+                    repository=event_data.get("repository") or "default_repo",
+                    branch=event_data.get("branch") or "main",
+                    commit_id=event_data.get("commit_id") or "0000000",
                     author=event_data.get("author"),
                     message=event_data.get("message"),
                     timestamp=event_data.get("timestamp"),
@@ -118,9 +189,12 @@ class TimelineEngine:
         return TimelineFormatter.export_to_file(events, export_path)
 
     def get_related_event(self, event_id: str):
-        """Retrieve full details of specific filesystem or git event."""
+        """Retrieve full details of specific event."""
         db = self.storage.get_session()
         try:
+            ai_event = db.query(AiEventModel).filter_by(event_id=event_id).first()
+            if ai_event:
+                return ai_event
             fs_event = db.query(FilesystemEventModel).filter_by(event_id=event_id).first()
             if fs_event:
                 return fs_event

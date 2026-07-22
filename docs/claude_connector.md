@@ -1,14 +1,15 @@
 # Claude Code Connector
 
-The Claude Code Connector is Prometra's flagship implementation of the V2 Connector SDK. It discovers local installations of Anthropic's Claude Code CLI, monitors session lifecycle, and aggregates context deterministically.
+The Claude Code Connector is Prometra's flagship implementation of the V2 Connector SDK. It discovers local installations of Anthropic's Claude Code CLI, monitors session lifecycle, and translates AI interactions into provider-agnostic events for the Timeline Engine.
 
 ## Features
-- **Auto-Discovery**: Locates `claude` (or `claude.cmd` on Windows) via system paths.
-- **Session Tracking**: Exposes the architecture for polling active sessions and intercepts lifecycle events (`ClaudeSessionStarted`, `ClaudeSessionStopped`).
-- **Data Persistence**: Inherits Prometra's `SQLiteStorage` context to save events directly into the `TimelineEventModel`.
-- **SDK Extensibility**: Implements `BaseConnector`, yielding its own custom typed metadata.
+- **Auto-Discovery**: Locates `claude` (or `claude.cmd` on Windows) via system PATH.
+- **Event Bus Streaming**: Emits typed Claude events (`ClaudePromptSubmitted`, `ClaudeResponseReceived`, `ClaudeToolInvocationStarted`, `ClaudeTokenUsage`, `ClaudeCostRecorded`, `ClaudeErrorOccurred`).
+- **Generic Event Translation**: Integrates with `ai_translator_registry` to convert Claude-specific events into normalized `AiEvent` instances.
+- **Decoupled Architecture**: Publishes events via `EventBus` without writing directly to SQLite. The `TimelineEngine` handles database persistence.
 
-## Lifecycle
-1. `initialize()`: Connects to the local `.prometra/prometra.db`.
-2. `connect()`: Scans the system for the Claude Code binary using `shutil.which`. If found, checks the version via subprocess and goes into `connected` state.
-3. `capture()`: Builds a rigorous context tree using `ContextBuilder` and bundles it with the dynamically generated connector metadata.
+## Lifecycle & Flow
+1. `initialize()`: Connects to local storage configuration.
+2. `connect()`: Scans the system for the Claude Code binary, updates health state, and emits `ClaudeConnected`.
+3. `emit_event()`: Translates connector events into generic `AiEvent` objects and publishes them onto the `EventBus`.
+4. `disconnect()`: Emits `ClaudeDisconnected` and releases resources gracefully.

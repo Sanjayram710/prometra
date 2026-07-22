@@ -16,13 +16,19 @@ class TimelineRenderer:
         cat_lower = (category or "").lower()
         src_lower = (source or "").lower()
 
-        if "error" in cat_lower or "error" in src_lower:
+        if "error" in cat_lower or "error" in src_lower or "failed" in cat_lower:
             return "red"
+        elif "prompt" in cat_lower:
+            return "bright_cyan"
+        elif "response" in cat_lower:
+            return "green"
+        elif "tool" in cat_lower:
+            return "yellow"
         elif "filesystem" in cat_lower:
             return "green"
         elif "git" in cat_lower:
             return "blue"
-        elif "ai" in cat_lower or cat_lower in ["promptsubmitted", "responsereceived", "toolinvocation", "modelselected", "contextbuilt", "tokenusage", "latencymeasured"]:
+        elif "ai" in cat_lower or cat_lower in ["modelselected", "contextbuilt", "tokenusage", "costrecorded", "latencymeasured"]:
             return "magenta"
         elif "connector" in cat_lower or "claude" in src_lower:
             return "yellow"
@@ -38,7 +44,7 @@ class TimelineRenderer:
 
         table = Table(title=title, show_header=True, header_style="bold cyan", expand=True)
         table.add_column("Timestamp", style="dim", width=22)
-        table.add_column("Category", width=14)
+        table.add_column("Category", width=20)
         table.add_column("Source", width=12)
         table.add_column("Description")
         table.add_column("Session", width=14)
@@ -70,7 +76,11 @@ class TimelineRenderer:
         table.add_row("Sessions", str(summary.sessions_count))
         table.add_row("Files Modified", f"[green]{summary.files_modified}[/green]")
         table.add_row("Git Commits", f"[blue]{summary.git_commits}[/blue]")
-        table.add_row("AI Events", f"[magenta]{summary.ai_events}[/magenta]")
+        table.add_row("AI Prompts", f"[bright_cyan]{summary.ai_prompts}[/bright_cyan]")
+        table.add_row("AI Responses", f"[green]{summary.ai_responses}[/green]")
+        table.add_row("Tool Calls", f"[yellow]{summary.tool_calls}[/yellow]")
+        table.add_row("Token Usage", f"[magenta]{summary.total_tokens} (In: {summary.input_tokens}, Out: {summary.output_tokens})[/magenta]")
+        table.add_row("Estimated Cost", f"[bold green]${summary.estimated_cost:.4f}[/bold green]")
         table.add_row("Connectors Used", f"[yellow]{', '.join(summary.connectors_used) if summary.connectors_used else 'None'}[/yellow]")
         table.add_row("Total Events", f"[bold white]{summary.total_events}[/bold white]")
 

@@ -63,23 +63,33 @@ class EventBus:
     """Publish/Subscribe Event Bus"""
     def __init__(self):
         self._subscribers: Dict[str, List[Callable[[BaseEvent], None]]] = {}
+        self._generic_subscribers: List[Callable[[BaseEvent], None]] = []
         self._lock = threading.Lock()
 
-    def subscribe(self, event_class: Type[BaseEvent], callback: Callable[[BaseEvent], None]):
-        # Depending on Pydantic version, getting the default value varies
-        # Pydantic v2:
-        event_type = event_class.model_fields['event_type'].default
+    def subscribe(self, event_class_or_type: Any, callback: Callable[[BaseEvent], None]):
         with self._lock:
-            if event_type not in self._subscribers:
-                self._subscribers[event_type] = []
-            self._subscribers[event_type].append(callback)
+            if event_class_or_type == "*" or event_class_or_type is BaseEvent:
+                self._generic_subscribers.append(callback)
+            elif isinstance(event_class_or_type, str):
+                if event_class_or_type not in self._subscribers:
+                    self._subscribers[event_class_or_type] = []
+                self._subscribers[event_class_or_type].append(callback)
+            elif hasattr(event_class_or_type, "model_fields") and "event_type" in event_class_or_type.model_fields:
+                event_type = event_class_or_type.model_fields['event_type'].default
+                if event_type not in self._subscribers:
+                    self._subscribers[event_type] = []
+                self._subscribers[event_type].append(callback)
+            else:
+                self._generic_subscribers.append(callback)
 
     def publish(self, event: BaseEvent):
         with self._lock:
             subs = self._subscribers.get(event.event_type, []).copy()
+            generics = self._generic_subscribers.copy()
             
-        for callback in subs:
+        for callback in subs + generics:
             try:
                 callback(event)
             except Exception:
                 pass
+

@@ -116,3 +116,19 @@ class TimelineEventModel(Base):
     details_access_level = Column(String)
     confidence = Column(Float)
     analysis_version = Column(String)
+
+class AiEventModel(Base):
+    __tablename__ = "ai_events"
+    event_id = Column(String, primary_key=True)
+    session_id = Column(String, ForeignKey("sessions.session_id"), nullable=True)
+    timestamp = Column(AwareDateTime, nullable=False)
+    event_type = Column(String, nullable=False)
+    connector = Column(String, nullable=False)
+    model_name = Column(String)
+    prompt_id = Column(String)
+    tool_name = Column(String)
+    token_usage = Column(JSON)
+    cost = Column(Float, default=0.0)
+    description = Column(String)
+    extra_metadata = Column(JSON)
+
