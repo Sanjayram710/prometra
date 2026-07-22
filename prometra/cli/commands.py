@@ -17,6 +17,10 @@ from prometra.dashboard.engine import DashboardEngine
 from prometra.dashboard.renderer import DashboardRenderer
 from prometra.dashboard.formatter import DashboardFormatter
 from prometra.dashboard.exporter import DashboardExporter
+from prometra.search.engine import SearchEngine
+from prometra.search.renderer import SearchRenderer
+from prometra.search.formatter import SearchFormatter
+from prometra.search.exporter import SearchExporter
 from prometra.tracker.filesystem import FilesystemTracker
 from prometra.tracker.git import GitTracker
 from prometra.analyzer.health import HealthAnalyzer
@@ -311,6 +315,53 @@ def dashboard(
     renderer = DashboardRenderer(console)
     renderer.render(metrics)
 
+def search(
+    query: str = typer.Argument(..., help="Search query keyword or pattern"),
+    event_type: Optional[str] = typer.Option(None, "--type", "-t", help="Filter by event type / category (filesystem, git, ai, session)"),
+    session_id: Optional[str] = typer.Option(None, "--session", "-s", help="Filter by session ID"),
+    today: bool = typer.Option(False, "--today", help="Filter events for today"),
+    week: bool = typer.Option(False, "--week", help="Filter events for past 7 days"),
+    since: Optional[str] = typer.Option(None, "--since", help="Filter events since date (YYYY-MM-DD)"),
+    until: Optional[str] = typer.Option(None, "--until", help="Filter events until date (YYYY-MM-DD)"),
+    limit: Optional[int] = typer.Option(None, "--limit", "-l", help="Limit max search results"),
+    json_out: bool = typer.Option(False, "--json", help="Output search results as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output search results as Markdown"),
+    export: Optional[str] = typer.Option(None, "--export", help="Export search results to file (.md, .json)")
+):
+    """Instantly search all recorded project events stored in SQLite."""
+    try:
+        storage = get_storage()
+        engine = SearchEngine(storage)
+        results = engine.search_events(
+            query=query,
+            category=event_type,
+            session=session_id,
+            since=since,
+            until=until,
+            today=today,
+            week=week,
+            limit=limit,
+            export=export
+        )
+
+        if export:
+            file_path = SearchExporter.export(results, export)
+            console.print(f"[green]Exported search results to {file_path}[/green]")
+            return
+
+        if json_out:
+            console.print(SearchFormatter.to_json(results))
+            return
+
+        if markdown_out:
+            console.print(SearchFormatter.to_markdown(results))
+            return
+
+        renderer = SearchRenderer(console)
+        renderer.render(results)
+    except Exception as e:
+        console.print(f"[red]Search Error:[/red] {str(e)}")
+
 def doctor():
     """Run diagnostics."""
     console.print("[blue]Running Prometra diagnostics...[/blue]")
@@ -340,7 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.6.2")
+    console.print("Prometra Version: 1.7.0")
     console.print("Schema Version: 1.0")
 
 def export():

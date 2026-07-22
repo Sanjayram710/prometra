@@ -36,6 +36,18 @@ flowchart LR
     Renderer -->|Rich Terminal UI| Terminal[Developer Console]
 ```
 
+## Search Subsystem Flow
+
+```mermaid
+flowchart LR
+    CLI[prometra search] -->|Query & Filters| Engine[SearchEngine]
+    Engine -->|Builds Parameterized SQL| Builder[SearchQueryBuilder]
+    Builder -->|Executes Case-Insensitive Search| SQLite[(SQLite Database)]
+    Engine -->|Populates SearchResultSet| Result[SearchResultSet]
+    Result -->|Highlights Text & Renders Tables| Renderer[SearchRenderer]
+    Renderer -->|Rich Terminal UI| Terminal[Developer Console]
+```
+
 ### Core Architecture Components
 
 1. **Storage Layer (`prometra/storage`)**: Uses SQLAlchemy mapped to a local SQLite database (`.prometra/prometra.db`). Maintains strict timezone-aware UTC schemas using `AwareDateTime`. Persists filesystem events, git events, timeline events, and detailed `AiEventModel` records.
@@ -50,4 +62,5 @@ flowchart LR
 5. **Timeline Engine (`prometra/timeline`)**: Funnels filesystem, git, and AI event streams into a unified `TimelineEventModel` sequence.
 6. **Session Replay Engine (`prometra/replay`)**: Reconstructs session history, playing back events at animated speeds (`1x`, `2x`, `5x`, `10x`, `instant`) or step-by-step mode (`--step`).
 7. **Analytics Dashboard (`prometra/dashboard`)**: Executes SQL aggregations across sessions, file edits, git commits, and AI metrics to render actionable developer productivity dashboards.
-8. **Analyzer & Reports (`prometra/analyzer`, `prometra/reports`)**: Formulates codebase health scores, dependency risk metrics, and multi-format reports.
+8. **Intelligent Search Subsystem (`prometra/search`)**: Executes high-performance parameterized SQL queries ($<150$ms) across all recorded events in SQLite with case-insensitive filtering (`--type`, `--session`, `--today`, `--week`, `--since`, `--until`), keyword text highlighting, and JSON/Markdown export formats.
+9. **Analyzer & Reports (`prometra/analyzer`, `prometra/reports`)**: Formulates codebase health scores, dependency risk metrics, and multi-format reports.

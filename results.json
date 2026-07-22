@@ -1,0 +1,28 @@
+{
+  "query": "hello",
+  "applied_filters": {},
+  "total_results": 2,
+  "execution_time_ms": 9.75,
+  "results": [
+    {
+      "event_id": 3,
+      "timestamp": "2026-07-22T07:28:06.221259Z",
+      "category": "filesystem",
+      "source": "filesystem",
+      "actor_tool": null,
+      "session_id": "53320cdb-0dad-474b-8360-8854f0abc1ac",
+      "summary": "File modified: hello.py",
+      "matched_field": "summary"
+    },
+    {
+      "event_id": 2,
+      "timestamp": "2026-07-22T07:27:59.909523Z",
+      "category": "filesystem",
+      "source": "filesystem",
+      "actor_tool": null,
+      "session_id": "53320cdb-0dad-474b-8360-8854f0abc1ac",
+      "summary": "File modified: hello.py",
+      "matched_field": "summary"
+    }
+  ]
+}
