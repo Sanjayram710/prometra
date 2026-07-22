@@ -14,7 +14,7 @@ The Typer CLI exposes the following utilities:
 ## Queries
 - `prometra status`: Query the SQLite database for current session length and file changes.
 - `prometra history [--json] [--session ID]`: Extract previous session durations.
-- `prometra timeline [--markdown] [--json]`: Dump the sequential chronological history of the project.
+- `prometra timeline [OPTIONS]`: Interactive timeline explorer with rich tables, colorization, search, filtering (`--session`, `--type`, `--connector`, `--search`, `--today`, `--limit`, `--reverse`), session grouping (`--group session`), summary statistics (`--summary`), and file export (`--export timeline.md|csv|json`).
 
 ## Maintenance
 - `prometra doctor`: Verify python version, SQLite availability, and Git tracking capability.

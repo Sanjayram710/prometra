@@ -1,0 +1,102 @@
+[
+  {
+    "id": 1,
+    "timestamp": "2026-07-21 15:30:29.861511+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "8caa2490-ca09-4d60-96b5-36e277f7c085",
+    "summary": "File created: hello.py",
+    "sequence": 1
+  },
+  {
+    "id": 2,
+    "timestamp": "2026-07-21 15:30:29.879519+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "8caa2490-ca09-4d60-96b5-36e277f7c085",
+    "summary": "File modified: hello.py",
+    "sequence": 2
+  },
+  {
+    "id": 3,
+    "timestamp": "2026-07-21 15:30:34.631150+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "8caa2490-ca09-4d60-96b5-36e277f7c085",
+    "summary": "File created: demo/README.md",
+    "sequence": 3
+  },
+  {
+    "id": 4,
+    "timestamp": "2026-07-21 15:30:34.632163+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "8caa2490-ca09-4d60-96b5-36e277f7c085",
+    "summary": "File modified: demo/README.md",
+    "sequence": 4
+  },
+  {
+    "id": 5,
+    "timestamp": "2026-07-21 19:18:54.850090+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "5d26a407-ca01-4077-be1e-948bd99c924b",
+    "summary": "File modified: hello.py",
+    "sequence": 5
+  },
+  {
+    "id": 6,
+    "timestamp": "2026-07-21 19:20:05.738269+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "5d26a407-ca01-4077-be1e-948bd99c924b",
+    "summary": "File modified: hello.py",
+    "sequence": 6
+  },
+  {
+    "id": 7,
+    "timestamp": "2026-07-21 19:20:23.029578+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "5d26a407-ca01-4077-be1e-948bd99c924b",
+    "summary": "File deleted: hello.py",
+    "sequence": 7
+  },
+  {
+    "id": 8,
+    "timestamp": "2026-07-21 19:20:45.773867+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "5d26a407-ca01-4077-be1e-948bd99c924b",
+    "summary": "File created: hello.py",
+    "sequence": 8
+  },
+  {
+    "id": 9,
+    "timestamp": "2026-07-21 19:20:50.969048+00:00",
+    "normalized_event_type": "filesystem",
+    "source": "filesystem",
+    "actor_tool": "",
+    "session_id": "5d26a407-ca01-4077-be1e-948bd99c924b",
+    "summary": "File modified: hello.py",
+    "sequence": 9
+  },
+  {
+    "id": 10,
+    "timestamp": "2026-07-21 19:23:06+00:00",
+    "normalized_event_type": "git",
+    "source": "git",
+    "actor_tool": "",
+    "session_id": "b415d155-b1dc-4591-ac04-81ccdef92a02",
+    "summary": "Git commit ffe399c: Test Git tracking",
+    "sequence": 10
+  }
+]

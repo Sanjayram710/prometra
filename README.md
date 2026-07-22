@@ -4,7 +4,7 @@ The Intelligence Layer for AI-Assisted Software Development.
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-21_Passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-33_Passing-success.svg)](tests/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
 ## Table of Contents
@@ -53,8 +53,9 @@ Modern software development relies heavily on AI. While Git flawlessly records c
 - ✅ Connector SDK
 - ✅ Claude Connector
 - ✅ Provider-Agnostic AI Event Model
+- ✅ Interactive Timeline Explorer
 
-**Testing:** 21 Automated Tests Passing  
+**Testing:** 33 Automated Tests Passing  
 **Status:** Actively Developed
 
 ---
@@ -84,7 +85,7 @@ Developers interact with their codebase while Prometra seamlessly monitors activ
 | **Filesystem Tracking** | Real-time monitoring of file modifications, creations, and deletions. | ✅ Active |
 | **Git Tracking** | Capture commits, branch states, and repository metadata. | ✅ Active |
 | **SQLite Storage** | Local-first, schema-driven persistent storage. | ✅ Active |
-| **Timeline Engine** | Chronological sequencing of all developer and AI actions. | ✅ Active |
+| **Interactive Timeline** | Rich visual tables, filtering (`--session`, `--type`, `--connector`, `--search`, `--today`), grouping (`--group session`), summary statistics (`--summary`), and multi-format exports (`--export`). | ✅ Active |
 | **Project Analytics** | Codebase health, risk level, and statistical insights. | ✅ Active |
 | **Report Generation** | Multi-format (Markdown, HTML, JSON, CSV) intelligence reports. | ✅ Active |
 | **Export System** | Compress and package project intelligence into portable archives. | ✅ Active |

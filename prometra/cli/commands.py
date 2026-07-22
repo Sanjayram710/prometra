@@ -1,10 +1,14 @@
 import typer
 import os
 import time
+from typing import Optional
 from rich.console import Console
 from prometra.storage.sqlite import SQLiteStorage
 from prometra.tracker.session import SessionManager
 from prometra.timeline.engine import TimelineEngine
+from prometra.timeline.filters import TimelineFilter
+from prometra.timeline.formatter import TimelineFormatter
+from prometra.timeline.renderer import TimelineRenderer
 from prometra.tracker.filesystem import FilesystemTracker
 from prometra.tracker.git import GitTracker
 from prometra.analyzer.health import HealthAnalyzer
@@ -159,22 +163,62 @@ def history(today: bool = typer.Option(False, "--today"), session_id: str = type
     finally:
         db.close()
 
-def timeline(session_id: str = typer.Option(None, "--session"), today: bool = typer.Option(False, "--today"), json_out: bool = typer.Option(False, "--json"), markdown_out: bool = typer.Option(False, "--markdown")):
-    """Display chronological project history."""
+def timeline(
+    session_id: Optional[str] = typer.Option(None, "--session", help="Filter by session ID"),
+    event_type: Optional[str] = typer.Option(None, "--type", help="Filter by event type (filesystem, git, ai, connector, session)"),
+    connector: Optional[str] = typer.Option(None, "--connector", help="Filter by AI connector name (e.g. claude)"),
+    search: Optional[str] = typer.Option(None, "--search", help="Search descriptions and metadata"),
+    today: bool = typer.Option(False, "--today", help="Show today's events only"),
+    limit: Optional[int] = typer.Option(None, "--limit", help="Limit maximum events returned"),
+    reverse: bool = typer.Option(False, "--reverse", help="Reverse chronological order"),
+    group: Optional[str] = typer.Option(None, "--group", help="Group events (e.g., session)"),
+    summary: bool = typer.Option(False, "--summary", help="Show summary metrics"),
+    export: Optional[str] = typer.Option(None, "--export", help="Export timeline to file (.md, .csv, .json)"),
+    json_out: bool = typer.Option(False, "--json", help="Output raw JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output raw Markdown")
+):
+    """Display interactive chronological project history with filtering and export support."""
     storage = get_storage()
     engine = TimelineEngine(storage)
-    events = engine.get_events(session_id=session_id)
     
-    out = [{"time": str(e.timestamp), "type": e.normalized_event_type, "source": e.source, "summary": e.summary} for e in events]
+    filters = TimelineFilter(
+        session_id=session_id,
+        event_type=event_type,
+        connector=connector,
+        search=search,
+        today=today,
+        limit=limit,
+        reverse=reverse,
+        group=group,
+        summary=summary,
+        export=export
+    )
+    
+    renderer = TimelineRenderer(console)
+    
+    if export:
+        file_path = engine.export_events(filters, export)
+        console.print(f"[green]Exported timeline to {file_path}[/green]")
+        return
+
+    if summary:
+        metrics = engine.get_summary(filters)
+        renderer.render_summary(metrics)
+        return
+
+    if group and group.lower() == "session":
+        grouped = engine.get_grouped(filters)
+        renderer.render_grouped(grouped)
+        return
+
+    events = engine.query_events(filters)
+
     if json_out:
-        import json
-        console.print(json.dumps(out))
+        console.print(TimelineFormatter.to_json(events))
     elif markdown_out:
-        for e in out:
-            console.print(f"- {e['time']} **{e['type']}** ({e['source']}): {e['summary']}")
+        console.print(TimelineFormatter.to_markdown(events))
     else:
-        for e in out:
-            console.print(f"{e['time']} | {e['type'].upper()} | {e['source']} | {e['summary']}")
+        renderer.render_table(events)
 
 def doctor():
     """Run diagnostics."""
@@ -205,7 +249,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.0.0 (Local-First Completion)")
+    console.print("Prometra Version: 1.2.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -230,4 +274,3 @@ def export():
             zipf.write(db_path, "prometra.db")
             
     console.print(f"[green]Exported to {zip_path}[/green]")
-
