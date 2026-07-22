@@ -207,3 +207,60 @@ def test_replay_empty_database(monkeypatch, temp_db):
     runner_res = runner.invoke(app, ["replay", "--latest"])
     assert runner_res.exit_code == 0
     assert "No session found to replay" in runner_res.stdout
+
+def test_replay_latest_session_with_empty_newer_session(temp_db):
+    engine = TimelineEngine(temp_db)
+    now = utcnow()
+    db = temp_db.get_session()
+
+    # Session 1: Older session WITH events
+    s1 = SessionModel(
+        session_id="sess-with-events",
+        project_id="test",
+        start_ts=now - datetime.timedelta(hours=2),
+        end_ts=now - datetime.timedelta(hours=1),
+        duration_seconds=3600,
+        project_path="/app",
+        working_directory="/app",
+        status="completed"
+    )
+    # Session 2: Newer session WITHOUT events
+    s2 = SessionModel(
+        session_id="sess-empty-newer",
+        project_id="test",
+        start_ts=now - datetime.timedelta(minutes=10),
+        end_ts=now,
+        duration_seconds=600,
+        project_path="/app",
+        working_directory="/app",
+        status="completed"
+    )
+    db.add_all([s1, s2])
+    db.commit()
+    db.close()
+
+    # Append events for sess-with-events
+    engine.append_event({
+        "type": "filesystem",
+        "session_id": "sess-with-events",
+        "timestamp": now - datetime.timedelta(hours=2),
+        "source": "filesystem",
+        "summary": "File modified: main.py"
+    })
+    engine.append_event({
+        "type": "git",
+        "session_id": "sess-with-events",
+        "timestamp": now - datetime.timedelta(hours=1),
+        "source": "git",
+        "summary": "Git Commit: fix bug"
+    })
+
+    replay_eng = ReplayEngine(temp_db)
+    resolved_id = replay_eng.resolve_session_id(latest=True)
+
+    # Must resolve to the session WITH events, not the empty newer session!
+    assert resolved_id == "sess-with-events"
+    events = replay_eng.get_session_events(resolved_id)
+    assert len(events) == 2
+    assert events[0].summary == "File modified: main.py"
+    assert events[1].summary == "Git Commit: fix bug"

@@ -28,12 +28,31 @@ class ReplayEngine:
                 return session_id
 
             if latest or not session_id:
-                latest_session = db.query(SessionModel).order_by(SessionModel.start_ts.desc()).first()
-                if latest_session:
-                    return latest_session.session_id
-                latest_tl = db.query(TimelineEventModel).filter(TimelineEventModel.session_id.isnot(None)).order_by(TimelineEventModel.id.desc()).first()
+                # 1. Query for the latest session in SessionModel that has timeline events
+                subq = db.query(TimelineEventModel.session_id).filter(TimelineEventModel.session_id.isnot(None)).distinct()
+                latest_with_events = (
+                    db.query(SessionModel)
+                    .filter(SessionModel.session_id.in_(subq))
+                    .order_by(SessionModel.start_ts.desc())
+                    .first()
+                )
+                if latest_with_events:
+                    return latest_with_events.session_id
+
+                # 2. Fallback: Query TimelineEventModel for the latest distinct session_id
+                latest_tl = (
+                    db.query(TimelineEventModel)
+                    .filter(TimelineEventModel.session_id.isnot(None))
+                    .order_by(TimelineEventModel.id.desc())
+                    .first()
+                )
                 if latest_tl:
                     return latest_tl.session_id
+
+                # 3. Fallback: Return latest session in SessionModel even if empty
+                latest_any = db.query(SessionModel).order_by(SessionModel.start_ts.desc()).first()
+                if latest_any:
+                    return latest_any.session_id
             return None
         finally:
             db.close()

@@ -9,22 +9,22 @@ class ReplayFormatter:
     def get_event_icon(event_type: str) -> str:
         net = (event_type or "").lower()
         if "sessionstart" in net:
-            return "🚀"
+            return "[START]"
         elif "sessionend" in net or "sessionstop" in net:
-            return "🏁"
+            return "[END]"
         elif "prompt" in net:
-            return "💡"
+            return "[PROMPT]"
         elif "response" in net:
-            return "🤖"
+            return "[AI]"
         elif "tool" in net:
-            return "🛠️"
+            return "[TOOL]"
         elif "filesystem" in net or "file" in net:
-            return "📝"
+            return "[FILE]"
         elif "git" in net:
-            return "🔀"
+            return "[GIT]"
         elif "error" in net or "fail" in net:
-            return "❌"
-        return "🔹"
+            return "[ERR]"
+        return "[*]"
 
     @classmethod
     def to_json(cls, session_info: Dict[str, Any], events: List[TimelineEventModel]) -> str:

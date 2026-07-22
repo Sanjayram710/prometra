@@ -25,6 +25,17 @@ flowchart LR
     Renderer -->|Rich UI Panels & Icons| Terminal[Developer Console]
 ```
 
+## Analytics Dashboard Flow
+
+```mermaid
+flowchart LR
+    CLI[prometra dashboard] -->|Time Window & Session Filters| Engine[DashboardEngine]
+    Engine -->|SQL Aggregation COUNT/SUM/AVG| SQLite[(SQLite Database)]
+    Engine -->|Populates Metrics Model| Metrics[DashboardMetrics]
+    Metrics -->|Renders Panels & Ranking Tables| Renderer[DashboardRenderer]
+    Renderer -->|Rich Terminal UI| Terminal[Developer Console]
+```
+
 ### Core Architecture Components
 
 1. **Storage Layer (`prometra/storage`)**: Uses SQLAlchemy mapped to a local SQLite database (`.prometra/prometra.db`). Maintains strict timezone-aware UTC schemas using `AwareDateTime`. Persists filesystem events, git events, timeline events, and detailed `AiEventModel` records.
@@ -38,4 +49,5 @@ flowchart LR
 4. **Event Bus (`prometra/connectors/events.py`)**: Pub/sub architecture decoupling connectors from storage logic.
 5. **Timeline Engine (`prometra/timeline`)**: Funnels filesystem, git, and AI event streams into a unified `TimelineEventModel` sequence.
 6. **Session Replay Engine (`prometra/replay`)**: Reconstructs session history, playing back events at animated speeds (`1x`, `2x`, `5x`, `10x`, `instant`) or step-by-step mode (`--step`).
-7. **Analyzer & Reports (`prometra/analyzer`, `prometra/reports`)**: Formulates codebase health scores, dependency risk metrics, and multi-format reports.
+7. **Analytics Dashboard (`prometra/dashboard`)**: Executes SQL aggregations across sessions, file edits, git commits, and AI metrics to render actionable developer productivity dashboards.
+8. **Analyzer & Reports (`prometra/analyzer`, `prometra/reports`)**: Formulates codebase health scores, dependency risk metrics, and multi-format reports.

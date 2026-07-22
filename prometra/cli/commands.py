@@ -13,6 +13,10 @@ from prometra.replay.engine import ReplayEngine
 from prometra.replay.player import ReplayPlayer
 from prometra.replay.formatter import ReplayFormatter
 from prometra.replay.exporter import ReplayExporter
+from prometra.dashboard.engine import DashboardEngine
+from prometra.dashboard.renderer import DashboardRenderer
+from prometra.dashboard.formatter import DashboardFormatter
+from prometra.dashboard.exporter import DashboardExporter
 from prometra.tracker.filesystem import FilesystemTracker
 from prometra.tracker.git import GitTracker
 from prometra.analyzer.health import HealthAnalyzer
@@ -261,6 +265,37 @@ def replay(
     player = ReplayPlayer()
     player.play(events, session_info, speed=speed, step=step)
 
+def dashboard(
+    today: bool = typer.Option(False, "--today", help="Filter dashboard metrics for today"),
+    week: bool = typer.Option(False, "--week", help="Filter dashboard metrics for past 7 days"),
+    month: bool = typer.Option(False, "--month", help="Filter dashboard metrics for past 30 days"),
+    session_id: Optional[str] = typer.Option(None, "--session", help="Filter dashboard metrics for a specific session ID"),
+    json_out: bool = typer.Option(False, "--json", help="Output raw JSON dashboard"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output raw Markdown dashboard"),
+    export: Optional[str] = typer.Option(None, "--export", help="Export dashboard report to file (.md, .json)")
+):
+    """Display interactive development analytics dashboard."""
+    storage = get_storage()
+    engine = DashboardEngine(storage)
+
+    metrics = engine.compute_metrics(today=today, week=week, month=month, session_id=session_id)
+
+    if export:
+        file_path = DashboardExporter.export(metrics, export)
+        console.print(f"[green]Exported analytics dashboard to {file_path}[/green]")
+        return
+
+    if json_out:
+        console.print(DashboardFormatter.to_json(metrics))
+        return
+
+    if markdown_out:
+        console.print(DashboardFormatter.to_markdown(metrics))
+        return
+
+    renderer = DashboardRenderer(console)
+    renderer.render(metrics)
+
 def doctor():
     """Run diagnostics."""
     console.print("[blue]Running Prometra diagnostics...[/blue]")
@@ -290,7 +325,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.3.0")
+    console.print("Prometra Version: 1.4.0")
     console.print("Schema Version: 1.0")
 
 def export():

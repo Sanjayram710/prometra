@@ -7,9 +7,12 @@ from prometra.storage.sqlite import SQLiteStorage
 from prometra.storage.models import SessionModel, WorkspaceModel
 from prometra.core.time import utcnow
 
+from prometra.timeline.engine import TimelineEngine
+
 class SessionManager:
-    def __init__(self, storage: SQLiteStorage):
+    def __init__(self, storage: SQLiteStorage, timeline_engine: Optional[TimelineEngine] = None):
         self.storage = storage
+        self.timeline_engine = timeline_engine or TimelineEngine(storage)
 
     def recover_stale_sessions(self, project_id: str):
         db = self.storage.get_session()
@@ -63,6 +66,18 @@ class SessionManager:
             )
             db.add(session_model)
             db.commit()
+
+            # Record Session Started event in timeline_events
+            try:
+                self.timeline_engine.append_event({
+                    "type": "session",
+                    "session_id": session_id,
+                    "source": "system",
+                    "summary": "Session Started"
+                })
+            except Exception:
+                pass
+
             return new_session
         finally:
             db.close()
@@ -76,5 +91,16 @@ class SessionManager:
                 session.duration_seconds = int((session.end_ts - session.start_ts).total_seconds())
                 session.status = "completed"
                 db.commit()
+
+                # Record Session Ended event in timeline_events
+                try:
+                    self.timeline_engine.append_event({
+                        "type": "session",
+                        "session_id": session_id,
+                        "source": "system",
+                        "summary": "Session Ended"
+                    })
+                except Exception:
+                    pass
         finally:
             db.close()

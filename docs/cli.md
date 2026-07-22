@@ -10,6 +10,7 @@ The Typer CLI exposes the following utilities:
 ## Analysis
 - `prometra analyze`: Read the DB and compute the project's health score.
 - `prometra report`: Compile all tracked metrics into `.prometra/reports/` (JSON, CSV, MD, HTML).
+- `prometra dashboard [OPTIONS]`: Render interactive development analytics dashboard with time windows (`--today`, `--week`, `--month`), session filtering (`--session`), top edited files, top AI models, token costs, and exports (`--export dashboard.md|json`).
 
 ## Queries
 - `prometra status`: Query the SQLite database for current session length and file changes.

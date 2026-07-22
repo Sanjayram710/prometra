@@ -69,4 +69,4 @@ class ReplayRenderer:
     def render_footer(self, session_info: Dict[str, Any]):
         """Render session complete footer."""
         sess_id = session_info.get("session_id", "")
-        self.console.print(Panel(f"[bold green]✓ Replay finished for session #{sess_id}[/bold green]", border_style="green", expand=True))
+        self.console.print(Panel(f"[bold green][DONE] Replay finished for session #{sess_id}[/bold green]", border_style="green", expand=True))

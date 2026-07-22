@@ -127,10 +127,22 @@ class TimelineEngine:
                 )
                 db.add(git_event)
             
+            # Normalize event type
+            if event_type == "session":
+                sum_lower = (event_data.get("summary") or "").lower()
+                if "start" in sum_lower:
+                    norm_type = "SessionStarted"
+                elif "end" in sum_lower:
+                    norm_type = "SessionEnded"
+                else:
+                    norm_type = "session"
+            else:
+                norm_type = event_type
+
             # Create Unified Timeline Event
             tl_event = TimelineEventModel(
-                normalized_event_type=event_type,
-                timestamp=event_data.get("timestamp"),
+                normalized_event_type=norm_type,
+                timestamp=event_data.get("timestamp") or utcnow(),
                 sequence=max_seq + 1,
                 source=event_data.get("source", "system"),
                 actor_tool=event_data.get("actor_tool") or event_data.get("connector_name"),
