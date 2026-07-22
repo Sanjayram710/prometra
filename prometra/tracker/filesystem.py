@@ -1,21 +1,23 @@
 import os
 import threading
-from datetime import datetime
+from typing import Optional
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from prometra.core.time import utcnow
+from prometra.tracker.ignore import IgnoreManager
 
 class PrometraFSEventHandler(FileSystemEventHandler):
-    def __init__(self, callback, watch_dir: str):
+    def __init__(self, callback, watch_dir: str, ignore_manager: Optional[IgnoreManager] = None):
         self.callback = callback
         self.watch_dir = watch_dir
+        self.ignore_manager = ignore_manager or IgnoreManager(root_dir=watch_dir)
 
     def on_any_event(self, event):
         if event.is_directory:
             return
             
-        # Ignore .git and .prometra
-        if ".git" in event.src_path or ".prometra" in event.src_path:
+        # Check ignore manager before processing any event
+        if self.ignore_manager.should_ignore(event.src_path, root_dir=self.watch_dir):
             return
             
         rel_path = os.path.relpath(event.src_path, self.watch_dir)
@@ -31,11 +33,19 @@ class PrometraFSEventHandler(FileSystemEventHandler):
         self.callback(event_info)
 
 class FilesystemTracker:
-    def __init__(self, watch_dir: str, timeline_engine, session_id: str, project_id: str):
+    def __init__(
+        self,
+        watch_dir: str,
+        timeline_engine,
+        session_id: str,
+        project_id: str,
+        ignore_manager: Optional[IgnoreManager] = None
+    ):
         self.watch_dir = watch_dir
         self.timeline_engine = timeline_engine
         self.session_id = session_id
         self.project_id = project_id
+        self.ignore_manager = ignore_manager or IgnoreManager(root_dir=watch_dir)
         
         self.queue = []
         self.lock = threading.Lock()
@@ -43,7 +53,7 @@ class FilesystemTracker:
         self.debounce_ms = 500
         
         self.observer = Observer()
-        self.handler = PrometraFSEventHandler(self._queue_event, self.watch_dir)
+        self.handler = PrometraFSEventHandler(self._queue_event, self.watch_dir, ignore_manager=self.ignore_manager)
 
     def _queue_event(self, event_info: dict):
         with self.lock:
@@ -67,6 +77,8 @@ class FilesystemTracker:
             deduped[key] = ev
             
         for ev in deduped.values():
+            if self.ignore_manager.should_ignore(ev.get("path") or ev.get("normalized_relative_path"), root_dir=self.watch_dir):
+                continue
             ev["session_id"] = self.session_id
             ev["project_id"] = self.project_id
             ev["source"] = "filesystem"

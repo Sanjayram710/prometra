@@ -4,7 +4,7 @@ The Intelligence Layer for AI-Assisted Software Development.
 
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
-[![Tests](https://img.shields.io/badge/Tests-52_Passing-success.svg)](tests/)
+[![Tests](https://img.shields.io/badge/Tests-60_Passing-success.svg)](tests/)
 [![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey.svg)]()
 
 ## Table of Contents
@@ -13,6 +13,7 @@ The Intelligence Layer for AI-Assisted Software Development.
 - [Project Status](#project-status)
 - [Architecture](#architecture)
 - [Core Features](#core-features)
+- [Smart Ignore Rules](#smart-ignore-rules)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Screenshots](#screenshots)
@@ -46,7 +47,7 @@ Modern software development relies heavily on AI. While Git flawlessly records c
 
 ## Project Status
 
-**Current Release:**
+**Current Release (v1.6.2):**
 - ✅ Local-first Tracking
 - ✅ Git Tracking
 - ✅ SQLite Storage
@@ -57,8 +58,9 @@ Modern software development relies heavily on AI. While Git flawlessly records c
 - ✅ End-to-End AI Event Persistence
 - ✅ Session Replay Engine
 - ✅ Analytics Dashboard
+- ✅ Smart Ignore Rules (`.prometraignore`)
 
-**Testing:** 52 Automated Tests Passing  
+**Testing:** 60 Automated Tests Passing  
 **Status:** Actively Developed
 
 ---
@@ -91,6 +93,7 @@ Developers interact with their codebase while Prometra seamlessly monitors activ
 | **Interactive Timeline** | Rich visual tables, filtering (`--session`, `--type`, `--connector`, `--search`, `--today`), grouping (`--group session`), summary statistics (`--summary`), and multi-format exports (`--export`). | ✅ Active |
 | **Session Replay** | Reconstruct and play back coding sessions step-by-step or with animated playback speeds (`1x`, `2x`, `5x`, `10x`, `instant`). | ✅ Active |
 | **Analytics Dashboard** | Interactive development insights (Sessions, File Edit rankings, Top AI Models, Token Usage, Cost estimation, Peak hours) with time window filters (`--today`, `--week`, `--month`). | ✅ Active |
+| **Smart Ignore Rules** | Excludes virtual environments (`.venv`), dependencies (`node_modules`), caches (`__pycache__`), build outputs, and `.prometraignore` patterns. | ✅ Active |
 | **Project Analytics** | Codebase health, risk level, and statistical insights. | ✅ Active |
 | **Report Generation** | Multi-format (Markdown, HTML, JSON, CSV) intelligence reports. | ✅ Active |
 | **Export System** | Compress and package project intelligence into portable archives. | ✅ Active |
@@ -98,6 +101,26 @@ Developers interact with their codebase while Prometra seamlessly monitors activ
 | **Connector Registry** | Dynamic Python discovery for external plugins. | ✅ Active |
 | **Context Engine** | Generates strict Pydantic context trees from raw SQLite history. | ✅ Active |
 | **Event Bus** | Pub/Sub architecture for decoupling tracking from AI events. | ✅ Active |
+
+---
+
+## Smart Ignore Rules
+
+Prometra automatically excludes irrelevant files and directories from tracking (e.g. `.venv/`, `node_modules/`, `__pycache__/`, `.git/`, `build/`, `dist/`, `*.log`, `*.tmp`).
+
+You can customize project-specific ignore rules by creating a `.prometraignore` file in your repository root:
+
+```gitignore
+# Exclude build outputs and logs
+build/
+dist/
+logs/
+data/
+
+# Exclude specific file types
+*.csv
+*.zip
+```
 
 ---
 

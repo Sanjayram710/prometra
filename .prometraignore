@@ -1,0 +1,11 @@
+# Prometra Smart Ignore Rules
+# Add files or directories to exclude from timeline and analytics tracking
+
+build/
+dist/
+logs/
+data/
+*.csv
+*.zip
+logs/
+*.csv

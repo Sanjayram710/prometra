@@ -38,6 +38,21 @@ def init():
     else:
         console.print("[yellow]Prometra project already initialized.[/yellow]")
 
+    if not os.path.exists(".prometraignore"):
+        template = (
+            "# Prometra Smart Ignore Rules\n"
+            "# Add files or directories to exclude from timeline and analytics tracking\n\n"
+            "build/\n"
+            "dist/\n"
+            "logs/\n"
+            "data/\n"
+            "*.csv\n"
+            "*.zip\n"
+        )
+        with open(".prometraignore", "w", encoding="utf-8") as f:
+            f.write(template)
+        console.print("[green]Created .prometraignore file.[/green]")
+
 def start():
     """Start session tracking for the current project."""
     if not os.path.exists(".prometra"):
@@ -325,7 +340,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.4.0")
+    console.print("Prometra Version: 1.6.2")
     console.print("Schema Version: 1.0")
 
 def export():
