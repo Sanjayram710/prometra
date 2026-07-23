@@ -8,7 +8,14 @@ from typer.testing import CliRunner
 from prometra.cli.main import app
 from prometra.storage.sqlite import SQLiteStorage
 from prometra.storage.models import TimelineEventModel, FilesystemEventModel, AiEventModel, SessionModel
+<<<<<<< HEAD
 from prometra.diff.engine import DiffEngine
+=======
+from prometra.timeline.engine import TimelineEngine
+from prometra.diff.engine import DiffEngine
+from prometra.diff.models import FileVersion, DiffResult
+from prometra.diff.formatter import DiffFormatter
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 from prometra.diff.exporter import DiffExporter
 from prometra.core.time import utcnow
 
@@ -28,6 +35,10 @@ def temp_storage():
 def populated_diff_db(temp_storage):
     db = temp_storage.get_session()
     
+<<<<<<< HEAD
+=======
+    # Session 1
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     s1 = SessionModel(
         session_id="sess-1",
         project_id="test_proj",
@@ -38,7 +49,25 @@ def populated_diff_db(temp_storage):
         status="completed"
     )
     db.add(s1)
+<<<<<<< HEAD
 
+=======
+    
+    # Session 2
+    s2 = SessionModel(
+        session_id="sess-2",
+        project_id="test_proj",
+        start_ts=utcnow() - datetime.timedelta(hours=1),
+        duration_seconds=1800,
+        project_path="/app",
+        working_directory="/app",
+        status="completed"
+    )
+    db.add(s2)
+    db.commit()
+
+    # Timeline event 1 (Session 1, Event 1)
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     tl1 = TimelineEventModel(
         normalized_event_type="filesystem",
         timestamp=utcnow() - datetime.timedelta(hours=2),
@@ -61,6 +90,10 @@ def populated_diff_db(temp_storage):
     )
     db.add(ai1)
 
+<<<<<<< HEAD
+=======
+    # Timeline event 2 (Session 1, Event 2)
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     tl2 = TimelineEventModel(
         normalized_event_type="filesystem",
         timestamp=utcnow() - datetime.timedelta(hours=1, minutes=45),
@@ -83,12 +116,20 @@ def populated_diff_db(temp_storage):
     )
     db.add(ai2)
 
+<<<<<<< HEAD
+=======
+    # Timeline event 3 (Session 2, Event 3)
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     tl3 = TimelineEventModel(
         normalized_event_type="filesystem",
         timestamp=utcnow() - datetime.timedelta(minutes=30),
         sequence=3,
         source="filesystem",
+<<<<<<< HEAD
         session_id="sess-1",
+=======
+        session_id="sess-2",
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         related_event_ids=["fs-3"],
         summary="File modified: hello.py"
     )
@@ -96,7 +137,11 @@ def populated_diff_db(temp_storage):
 
     ai3 = AiEventModel(
         event_id="fs-3",
+<<<<<<< HEAD
         session_id="sess-1",
+=======
+        session_id="sess-2",
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         timestamp=utcnow() - datetime.timedelta(minutes=30),
         event_type="FileModified",
         connector="filesystem",
@@ -111,6 +156,10 @@ def populated_diff_db(temp_storage):
 
 def test_basic_diff(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
+<<<<<<< HEAD
+=======
+    # Diff between default latest pair or explicit events 1 & 2
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     res = engine.compute_diff("hello.py", from_event=1, to_event=2)
     assert res.file == "hello.py"
     assert res.event_from == 1
@@ -118,7 +167,11 @@ def test_basic_diff(populated_diff_db):
     assert res.modified_lines == 1
     assert res.added_lines == 1
     assert res.removed_lines == 0
+<<<<<<< HEAD
     assert 'Hello' in res.diff
+=======
+    assert '-print("Hello")' in res.diff or '- print("Hello")' in res.diff or 'Hello' in res.diff
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
 def test_identical_versions(temp_storage):
     db = temp_storage.get_session()
@@ -181,6 +234,11 @@ def test_session_filter(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
     res = engine.compute_diff("hello.py", session_id="sess-1")
     assert res.session_id == "sess-1"
+<<<<<<< HEAD
+=======
+    assert res.event_from == 1
+    assert res.event_to == 2
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
 def test_event_filter(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
@@ -193,6 +251,10 @@ def test_markdown_export(populated_diff_db):
     res = engine.compute_diff("hello.py", from_event=1, to_event=2)
     md = DiffExporter.to_markdown(res)
     assert "# File Diff" in md
+<<<<<<< HEAD
+=======
+    assert "**File:** `hello.py`" in md
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
     assert "```diff" in md
 
 def test_json_export(populated_diff_db):
@@ -203,6 +265,13 @@ def test_json_export(populated_diff_db):
     assert data["file"] == "hello.py"
     assert data["event_from"] == 1
     assert data["event_to"] == 2
+<<<<<<< HEAD
+=======
+    assert "added_lines" in data
+    assert "removed_lines" in data
+    assert "modified_lines" in data
+    assert "diff" in data
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
 def test_invalid_file(temp_storage):
     engine = DiffEngine(temp_storage)
@@ -227,8 +296,23 @@ def test_cli_diff(monkeypatch, populated_diff_db):
 
     res_help = runner.invoke(app, ["diff", "--help"])
     assert res_help.exit_code == 0
+<<<<<<< HEAD
     assert "FILE_PATH" in res_help.stdout or "Inspect changes" in res_help.stdout
+=======
+    assert "Inspect changes between tracked file versions" in res_help.stdout or "FILE_PATH" in res_help.stdout
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
     res_json = runner.invoke(app, ["diff", "hello.py", "--from-event", "1", "--to-event", "2", "--json"])
     assert res_json.exit_code == 0
     assert '"file": "hello.py"' in res_json.stdout
+<<<<<<< HEAD
+=======
+
+    res_md = runner.invoke(app, ["diff", "hello.py", "--from-event", "1", "--to-event", "2", "--markdown"])
+    assert res_md.exit_code == 0
+    assert "# File Diff" in res_md.stdout
+
+    res_plain = runner.invoke(app, ["diff", "hello.py", "--from-event", "1", "--to-event", "2"])
+    assert res_plain.exit_code == 0
+    assert "hello.py" in res_plain.stdout
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423

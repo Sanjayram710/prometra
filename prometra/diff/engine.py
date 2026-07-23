@@ -1,6 +1,10 @@
 import os
 import difflib
 from typing import List, Optional, Tuple, Dict, Any
+<<<<<<< HEAD
+=======
+from datetime import timezone
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
 from prometra.storage.sqlite import SQLiteStorage
 from prometra.storage.models import TimelineEventModel, FilesystemEventModel, AiEventModel, GitEventModel, SessionModel
@@ -27,12 +31,26 @@ class DiffEngine:
         file_path: Optional[str] = None
     ) -> Optional[str]:
         """Extract inline content associated with an event record if available."""
+<<<<<<< HEAD
+=======
+        # 1. Check AiEventModel extra_metadata
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         if ai_event and ai_event.extra_metadata:
             meta = ai_event.extra_metadata
             for key in ("content", "file_content", "code", "snapshot", "after_content", "text"):
                 if key in meta and isinstance(meta[key], str):
                     return meta[key]
 
+<<<<<<< HEAD
+=======
+        # 2. Check FilesystemEventModel or TimelineEventModel
+        # If event summary or metadata contains snapshot
+        if ai_event and ai_event.description:
+            # check if extra_metadata has content
+            pass
+
+        # 3. If file exists on disk, read current file content if it's applicable
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         if file_path and os.path.isfile(file_path):
             try:
                 with open(file_path, "r", encoding="utf-8", errors="replace") as f:
@@ -49,18 +67,34 @@ class DiffEngine:
         
         db = self.storage.get_session()
         try:
+<<<<<<< HEAD
             if session_id:
                 sess_check = db.query(SessionModel).filter_by(session_id=session_id).first()
                 if not sess_check:
+=======
+            # Check if session exists if session_id is provided
+            if session_id:
+                sess_check = db.query(SessionModel).filter_by(session_id=session_id).first()
+                if not sess_check:
+                    # Check in TimelineEventModel as fallback
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
                     tl_check = db.query(TimelineEventModel).filter_by(session_id=session_id).first()
                     if not tl_check:
                         raise ValueError(f"Session '{session_id}' not found.")
 
+<<<<<<< HEAD
+=======
+            # Query all filesystem events
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             fs_query = db.query(FilesystemEventModel)
             if session_id:
                 fs_query = fs_query.filter(FilesystemEventModel.session_id == session_id)
             fs_records = fs_query.all()
 
+<<<<<<< HEAD
+=======
+            # Map specific event_id -> FilesystemEventModel
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             fs_map: Dict[str, FilesystemEventModel] = {}
             matching_fs_ids = set()
             for r in fs_records:
@@ -71,6 +105,10 @@ class DiffEngine:
                 if r_norm == target_norm or r_path == target_norm or r_norm.endswith(target_norm) or r_filename == filename:
                     matching_fs_ids.add(r.event_id)
 
+<<<<<<< HEAD
+=======
+            # Query AI events
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             ai_query = db.query(AiEventModel)
             if session_id:
                 ai_query = ai_query.filter(AiEventModel.session_id == session_id)
@@ -87,10 +125,18 @@ class DiffEngine:
                         if p_norm == target_norm or p_norm.endswith(target_norm) or os.path.basename(str(p)).lower() == filename:
                             matching_ai_ids.add(r.event_id)
 
+<<<<<<< HEAD
+=======
+            # Query Git events
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             git_query = db.query(GitEventModel)
             git_records = git_query.all()
             git_map: Dict[str, GitEventModel] = {r.event_id: r for r in git_records}
 
+<<<<<<< HEAD
+=======
+            # Query TimelineEventModel
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             tl_query = db.query(TimelineEventModel)
             if session_id:
                 tl_query = tl_query.filter(TimelineEventModel.session_id == session_id)
@@ -121,6 +167,10 @@ class DiffEngine:
                         git_rec = git_map.get(rel_id)
 
                 if not is_match:
+<<<<<<< HEAD
+=======
+                    # Check summary or normalized event type for path match
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
                     summary_lower = (tl.summary or "").lower()
                     if target_norm in summary_lower or filename in summary_lower:
                         is_match = True
@@ -135,6 +185,10 @@ class DiffEngine:
                         file_path=file_path
                     )
                     
+<<<<<<< HEAD
+=======
+                    # If content extracted is None or empty and extra_metadata in ai_rec exists
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
                     if content is None and ai_rec and ai_rec.extra_metadata:
                         for k in ("before_content", "old_content"):
                             if k in ai_rec.extra_metadata:
@@ -150,6 +204,10 @@ class DiffEngine:
                     )
                     file_versions.append(version)
 
+<<<<<<< HEAD
+=======
+            # If no TimelineEventModel matched but matching_fs_ids / matching_ai_ids found
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             if not file_versions:
                 for fs_id in sorted(list(matching_fs_ids)):
                     fs_rec = fs_map.get(fs_id)
@@ -159,6 +217,10 @@ class DiffEngine:
                             fs_event=fs_rec,
                             file_path=file_path
                         )
+<<<<<<< HEAD
+=======
+                        # Derive synthetic event id or use sequence
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
                         v = FileVersion(
                             event_id=len(file_versions) + 1,
                             file_path=file_path,
@@ -181,8 +243,15 @@ class DiffEngine:
         latest: bool = False
     ) -> Tuple[FileVersion, FileVersion]:
         """Resolve the pair of FileVersions (from_version, to_version) to diff."""
+<<<<<<< HEAD
         versions = self.get_file_events(file_path, session_id=session_id)
 
+=======
+        # 1. Fetch file history events
+        versions = self.get_file_events(file_path, session_id=session_id)
+
+        # Check if file exists anywhere
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         if not versions:
             if session_id:
                 raise ValueError(f"Session '{session_id}' not found or has no events for '{file_path}'.")
@@ -190,8 +259,15 @@ class DiffEngine:
                 raise ValueError(f"File '{file_path}' not found in event history.")
             raise ValueError(f"No event history found for '{file_path}'.")
 
+<<<<<<< HEAD
         version_map: Dict[int, FileVersion] = {v.event_id: v for v in versions}
 
+=======
+        # Map event_id -> FileVersion
+        version_map: Dict[int, FileVersion] = {v.event_id: v for v in versions}
+
+        # Validate explicit from_event / to_event
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         if from_event is not None and from_event not in version_map:
             raise ValueError(f"Event {from_event} not found.")
 
@@ -204,16 +280,28 @@ class DiffEngine:
             return version_map[from_event], version_map[to_event]
 
         if from_event is not None and to_event is None:
+<<<<<<< HEAD
+=======
+            # to_event is next event or latest event after from_event
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             later_versions = [v for v in versions if v.event_id > from_event]
             if not later_versions:
                 raise ValueError("Not enough file versions to generate diff.")
             return version_map[from_event], later_versions[0]
 
         if from_event is None and to_event is not None:
+<<<<<<< HEAD
+=======
+            # from_event is event preceding to_event
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
             earlier_versions = [v for v in versions if v.event_id < to_event]
             if earlier_versions:
                 return earlier_versions[-1], version_map[to_event]
             else:
+<<<<<<< HEAD
+=======
+                # Compare empty version to to_event version
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
                 initial = FileVersion(
                     event_id=0,
                     file_path=file_path,
@@ -223,9 +311,17 @@ class DiffEngine:
                 )
                 return initial, version_map[to_event]
 
+<<<<<<< HEAD
         if len(versions) < 2:
             raise ValueError("Not enough file versions to generate diff.")
 
+=======
+        # Neither from_event nor to_event explicitly given
+        if len(versions) < 2:
+            raise ValueError("Not enough file versions to generate diff.")
+
+        # Latest pair
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         return versions[-2], versions[-1]
 
     def compute_diff(
@@ -249,6 +345,10 @@ class DiffEngine:
         lines1 = v1.content.splitlines(keepends=True) if v1.content else []
         lines2 = v2.content.splitlines(keepends=True) if v2.content else []
 
+<<<<<<< HEAD
+=======
+        # Ensure newline termination for clean difflib comparison
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         lines1 = [l if l.endswith('\n') else l + '\n' for l in lines1]
         lines2 = [l if l.endswith('\n') else l + '\n' for l in lines2]
 
@@ -261,6 +361,10 @@ class DiffEngine:
         )
         diff_text = "".join(diff_gen)
 
+<<<<<<< HEAD
+=======
+        # Calculate line stats using SequenceMatcher opcodes
+>>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
         matcher = difflib.SequenceMatcher(None, lines1, lines2)
         added_lines = 0
         removed_lines = 0
