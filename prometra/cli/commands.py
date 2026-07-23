@@ -391,7 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.7.0")
+    console.print("Prometra Version: 1.8.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -416,3 +416,42 @@ def export():
             zipf.write(db_path, "prometra.db")
             
     console.print(f"[green]Exported to {zip_path}[/green]")
+
+def diff(
+    file_path: str = typer.Argument(..., help="Path to the file to diff"),
+    session: Optional[str] = typer.Option(None, "--session", help="Filter by session ID"),
+    from_event: Optional[int] = typer.Option(None, "--from-event", help="Start event ID"),
+    to_event: Optional[int] = typer.Option(None, "--to-event", help="End event ID"),
+    latest: bool = typer.Option(False, "--latest", help="Diff the latest two versions"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output as Markdown"),
+    context: int = typer.Option(3, "--context", help="Number of context lines for diff"),
+):
+    """Inspect changes between tracked file versions."""
+    storage = get_storage()
+    from prometra.diff.engine import DiffEngine
+    from prometra.diff.renderer import DiffRenderer
+    from prometra.diff.formatter import DiffFormatter
+
+    engine = DiffEngine(storage)
+    try:
+        result = engine.compute_diff(
+            file_path=file_path,
+            session_id=session,
+            from_event=from_event,
+            to_event=to_event,
+            latest=latest,
+            context=context
+        )
+        if json_out:
+            console.print(DiffFormatter.to_json(result))
+            return
+        if markdown_out:
+            console.print(DiffFormatter.to_markdown(result))
+            return
+
+        renderer = DiffRenderer(console)
+        renderer.render(result)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+

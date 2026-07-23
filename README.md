@@ -48,7 +48,7 @@ Modern software development relies heavily on AI. While Git flawlessly records c
 
 ## Project Status
 
-**Current Release (v1.7.0):**
+**Current Release (v1.8.0):**
 - ✅ Local-first Tracking
 - ✅ Git Tracking
 - ✅ SQLite Storage
@@ -61,8 +61,9 @@ Modern software development relies heavily on AI. While Git flawlessly records c
 - ✅ Analytics Dashboard
 - ✅ Smart Ignore Rules (`.prometraignore`)
 - ✅ Intelligent Search Engine (`prometra search`)
+- ✅ File Diff Viewer (`prometra diff`)
 
-**Testing:** 72 Automated Tests Passing  
+**Testing:** 84 Automated Tests Passing  
 **Status:** Actively Developed
 
 ---
@@ -78,10 +79,11 @@ flowchart TD
     EventM --> DB[(SQLite)]
     DB --> Analytics[Analytics]
     DB --> Search[Intelligent Search]
+    DB --> Diff[File Diff Viewer]
 ```
 
 **Data Flow:**
-Developers interact with their codebase while Prometra seamlessly monitors activity in the background. The core system gathers context, delegates tool execution to external AI Connectors, translates all specialized actions into a Generic AI Event Model, and persists everything to a local SQLite database for downstream analytics, reporting, and instant search queries.
+Developers interact with their codebase while Prometra seamlessly monitors activity in the background. The core system gathers context, delegates tool execution to external AI Connectors, translates all specialized actions into a Generic AI Event Model, and persists everything to a local SQLite database for downstream analytics, reporting, instant search queries, and local file diff viewing.
 
 ---
 
@@ -97,6 +99,7 @@ Developers interact with their codebase while Prometra seamlessly monitors activ
 | **Session Replay** | Reconstruct and play back coding sessions step-by-step or with animated playback speeds (`1x`, `2x`, `5x`, `10x`, `instant`). | ✅ Active |
 | **Analytics Dashboard** | Interactive development insights (Sessions, File Edit rankings, Top AI Models, Token Usage, Cost estimation, Peak hours) with time window filters (`--today`, `--week`, `--month`). | ✅ Active |
 | **Intelligent Search** | Sub-150ms instant querying across all recorded events (Filesystem, Git commits, AI prompts, AI responses, Tool calls, Session lifecycle) with filtering (`--type`, `--session`, `--today`, `--week`, `--since`, `--until`, `--limit`), text highlighting, and JSON/Markdown export options. | ✅ Active |
+| **File Diff Viewer** | Local line-by-line file diffing between tracked event checkpoints (`prometra diff`) with session filtering (`--session`), event range selection (`--from-event`, `--to-event`), context options (`--context`), and JSON/Markdown exports. | ✅ Active |
 | **Smart Ignore Rules** | Excludes virtual environments (`.venv`), dependencies (`node_modules`), caches (`__pycache__`), build outputs, and `.prometraignore` patterns. | ✅ Active |
 | **Project Analytics** | Codebase health, risk level, and statistical insights. | ✅ Active |
 | **Report Generation** | Multi-format (Markdown, HTML, JSON, CSV) intelligence reports. | ✅ Active |
@@ -105,6 +108,27 @@ Developers interact with their codebase while Prometra seamlessly monitors activ
 | **Connector Registry** | Dynamic Python discovery for external plugins. | ✅ Active |
 | **Context Engine** | Generates strict Pydantic context trees from raw SQLite history. | ✅ Active |
 | **Event Bus** | Pub/Sub architecture for decoupling tracking from AI events. | ✅ Active |
+
+---
+
+## File Diff Viewer
+
+Inspect line-by-line changes between tracked file versions locally:
+
+```bash
+# Diff latest two recorded versions of a file
+prometra diff hello.py
+
+# Diff between specific event checkpoints
+prometra diff hello.py --from-event 12 --to-event 20
+
+# Filter file history by session ID
+prometra diff hello.py --session sess-1
+
+# Export diff results as JSON or Markdown
+prometra diff hello.py --json
+prometra diff hello.py --markdown
+```
 
 ---
 
