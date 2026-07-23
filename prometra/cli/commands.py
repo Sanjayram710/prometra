@@ -391,11 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-<<<<<<< HEAD
-    console.print("Prometra Version: 1.9.0")
-=======
-    console.print("Prometra Version: 1.8.0")
->>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
+    console.print("Prometra Version: 2.0.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -459,7 +455,6 @@ def diff(
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
 
-<<<<<<< HEAD
 def compare(
     session_a: Optional[str] = typer.Argument(None, help="First session ID to compare"),
     session_b: Optional[str] = typer.Argument(None, help="Second session ID to compare"),
@@ -501,6 +496,3 @@ def compare(
         renderer.render(result)
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
-
-=======
->>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423

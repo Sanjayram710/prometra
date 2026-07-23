@@ -19,10 +19,7 @@ app.command(name="config")(commands.config)
 app.command(name="version")(commands.version)
 app.command(name="export")(commands.export)
 app.command(name="diff")(commands.diff)
-<<<<<<< HEAD
 app.command(name="compare")(commands.compare)
-=======
->>>>>>> 2761a9f97943060944da3d25eb29b5bece7b3423
 
 from prometra.cli.connectors_cmd import app as connectors_app
 app.add_typer(connectors_app, name="connectors")
