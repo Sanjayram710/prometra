@@ -20,9 +20,13 @@ app.command(name="version")(commands.version)
 app.command(name="export")(commands.export)
 app.command(name="diff")(commands.diff)
 app.command(name="compare")(commands.compare)
+app.command(name="ui")(commands.ui)
 
 from prometra.cli.connectors_cmd import app as connectors_app
 app.add_typer(connectors_app, name="connectors")
+
+from prometra.cli.plugins_cmd import app as plugins_app
+app.add_typer(plugins_app, name="plugins")
 
 if __name__ == "__main__":
     app()

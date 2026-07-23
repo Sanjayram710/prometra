@@ -21,6 +21,7 @@ dependencies = [
     "watchdog>=3.0.0",
     "SQLAlchemy>=2.0.0",
     "pandas>=2.0.0",
+    "textual>=0.40.0",
 ]
 
 [project.scripts]

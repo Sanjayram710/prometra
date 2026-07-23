@@ -11,12 +11,14 @@ Welcome to the official documentation for **Prometra** – The Local-First Devel
 - **[Session Comparison Engine](compare.md)**: Side-by-side session productivity and metric comparisons.
 - **[Session Replay Engine](replay.md)**: Step-by-step coding session playback with speed controls.
 - **[Analytics Dashboard](dashboard.md)**: Aggregated development insights, file edit rankings, and AI token costs.
+- **[Interactive Terminal UI (TUI)](tui.md)**: Full-screen terminal user interface (`prometra ui`) with 8 views and keyboard navigation.
 - **[Smart Ignore Rules](ignore.md)**: Exclusion rules and `.prometraignore` configuration.
 
 ## Architecture & Integration
 
 - **[System Architecture](architecture.md)**: Data flow, SQLite storage models, and component diagrams.
 - **[Provider-Agnostic AI Events](ai_events.md)**: Standardized Pydantic AI event model specification.
+- **[Plugin System & Extension Framework](plugins.md)**: Developing, installing, and managing local Prometra plugins (`prometra plugins`).
 - **[Connector SDK Guide](connectors.md)**: Building custom AI assistant connectors.
 - **[Claude Connector Guide](claude_connector.md)**: Integration details for Claude Code.
 - **[Context Engine Guide](context.md)**: Structured context tree generation.

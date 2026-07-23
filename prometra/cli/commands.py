@@ -391,7 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 2.0.0")
+    console.print("Prometra Version: 2.1.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -496,3 +496,13 @@ def compare(
         renderer.render(result)
     except Exception as e:
         console.print(f"[red]Error:[/red] {str(e)}")
+
+def ui():
+    """Launch the interactive terminal user interface (TUI)."""
+    try:
+        from prometra.tui.app import PrometraTUI
+        storage = get_storage()
+        tui = PrometraTUI(storage=storage)
+        tui.run()
+    except Exception as e:
+        console.print(f"[red]Error launching Prometra TUI:[/red] {str(e)}")
