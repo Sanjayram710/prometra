@@ -1,0 +1,36 @@
+{
+  "session_a": "53320cdb-0dad-474b-8360-8854f0abc1ac",
+  "session_b": "29984506-7192-481c-9acc-8ed4a0c80087",
+  "duration_difference": "-1 min",
+  "files_created_difference": -1,
+  "files_modified_difference": -2,
+  "files_deleted_difference": 0,
+  "git_commit_difference": -1,
+  "ai_event_difference": 0,
+  "timeline_difference": {
+    "total_events_a": 8,
+    "total_events_b": 4,
+    "total_events_difference": -4,
+    "event_type_distribution_a": {
+      "SessionStarted": 1,
+      "filesystem": 5,
+      "git": 1,
+      "SessionEnded": 1
+    },
+    "event_type_distribution_b": {
+      "SessionStarted": 1,
+      "filesystem": 2,
+      "SessionEnded": 1
+    },
+    "productivity_a": {
+      "events_per_minute": 4.0,
+      "files_changed_per_minute": 2.5,
+      "commits_per_hour": 30.0
+    },
+    "productivity_b": {
+      "events_per_minute": 4.0,
+      "files_changed_per_minute": 2.0,
+      "commits_per_hour": 0.0
+    }
+  }
+}

@@ -391,7 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 1.7.0")
+    console.print("Prometra Version: 1.9.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -416,3 +416,84 @@ def export():
             zipf.write(db_path, "prometra.db")
             
     console.print(f"[green]Exported to {zip_path}[/green]")
+
+def diff(
+    file_path: str = typer.Argument(..., help="Path to the file to diff"),
+    session: Optional[str] = typer.Option(None, "--session", help="Filter by session ID"),
+    from_event: Optional[int] = typer.Option(None, "--from-event", help="Start event ID"),
+    to_event: Optional[int] = typer.Option(None, "--to-event", help="End event ID"),
+    latest: bool = typer.Option(False, "--latest", help="Diff the latest two versions"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output as Markdown"),
+    context: int = typer.Option(3, "--context", help="Number of context lines for diff"),
+):
+    """Inspect changes between tracked file versions."""
+    storage = get_storage()
+    from prometra.diff.engine import DiffEngine
+    from prometra.diff.renderer import DiffRenderer
+    from prometra.diff.formatter import DiffFormatter
+
+    engine = DiffEngine(storage)
+    try:
+        result = engine.compute_diff(
+            file_path=file_path,
+            session_id=session,
+            from_event=from_event,
+            to_event=to_event,
+            latest=latest,
+            context=context
+        )
+        if json_out:
+            console.print(DiffFormatter.to_json(result))
+            return
+        if markdown_out:
+            console.print(DiffFormatter.to_markdown(result))
+            return
+
+        renderer = DiffRenderer(console)
+        renderer.render(result)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+
+def compare(
+    session_a: Optional[str] = typer.Argument(None, help="First session ID to compare"),
+    session_b: Optional[str] = typer.Argument(None, help="Second session ID to compare"),
+    latest: bool = typer.Option(False, "--latest", help="Compare the two most recent sessions"),
+    json_out: bool = typer.Option(False, "--json", help="Output as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output as Markdown"),
+    export_path: Optional[str] = typer.Option(None, "--export", help="Path to export comparison report file"),
+):
+    """Compare metrics and activity between two development sessions."""
+    storage = get_storage()
+    from prometra.compare.engine import CompareEngine
+    from prometra.compare.renderer import CompareRenderer
+    from prometra.compare.formatter import CompareFormatter
+    from prometra.compare.exporter import CompareExporter
+
+    engine = CompareEngine(storage)
+    try:
+        result = engine.compare_sessions(
+            session_a=session_a,
+            session_b=session_b,
+            latest=latest
+        )
+
+        if export_path:
+            format_override = "json" if json_out else ("markdown" if markdown_out else None)
+            CompareExporter.export_to_file(result, export_path, format_override=format_override)
+            console.print(f"[green]Exported comparison report to {export_path}[/green]")
+            return
+
+        if json_out:
+            console.print(CompareFormatter.to_json(result))
+            return
+
+        if markdown_out:
+            console.print(CompareFormatter.to_markdown(result))
+            return
+
+        renderer = CompareRenderer(console)
+        renderer.render(result)
+    except Exception as e:
+        console.print(f"[red]Error:[/red] {str(e)}")
+
