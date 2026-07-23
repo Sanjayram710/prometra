@@ -18,6 +18,7 @@ app.command(name="doctor")(commands.doctor)
 app.command(name="config")(commands.config)
 app.command(name="version")(commands.version)
 app.command(name="export")(commands.export)
+app.command(name="diff")(commands.diff)
 
 from prometra.cli.connectors_cmd import app as connectors_app
 app.add_typer(connectors_app, name="connectors")
