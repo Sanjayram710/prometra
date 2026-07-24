@@ -9,7 +9,7 @@
 [![Python Version](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 [![Tests Passing](https://img.shields.io/badge/Tests-140%2B%20Passing-brightgreen.svg?style=for-the-badge&logo=pytest)](tests/)
-[![Release](https://img.shields.io/badge/Release-v2.2.0-blue.svg?style=for-the-badge)](docs/insights.md)
+[![Release](https://img.shields.io/badge/Release-v2.3.0-blue.svg?style=for-the-badge)](docs/timemachine.md)
 [![GitHub Stars](https://img.shields.io/github/stars/Sanjayram710/prometra?style=for-the-badge&logo=github)](https://github.com/Sanjayram710/prometra)
 [![GitHub Issues](https://img.shields.io/github/issues/Sanjayram710/prometra?style=for-the-badge&logo=github)](https://github.com/Sanjayram710/prometra/issues)
 
@@ -116,7 +116,8 @@ Prometra records all of this intelligence **100% locally** inside your repositor
 | **Session Comparison** | Compare two sessions side-by-side (`prometra compare`) with productivity stats. | ✅ Active |
 | **Smart Ignore Rules** | Excludes dependencies, virtual environments, build outputs, and `.prometraignore`. | ✅ Active |
 | **AI Session Intelligence Engine** | Local-first session analysis, productivity scoring, pattern detection, and recommendations (`prometra insights`). | ✅ Active |
-| **Interactive Terminal UI (TUI)** | Full-screen terminal app (`prometra ui`) with 9 views, keyboard navigation, and theme switcher. | ✅ Active |
+| **Time Machine & Checkpoint System** | Local state snapshots, safe restore preview, checkpoint diffs, and TUI View #10 (`prometra checkpoint`). | ✅ Active |
+| **Interactive Terminal UI (TUI)** | Full-screen terminal app (`prometra ui`) with 10 views, keyboard navigation, and theme switcher. | ✅ Active |
 | **Plugin System & Extension Framework** | Local-first extension framework (`prometra plugins`) with fault-isolated event hooks. | ✅ Active |
 | **Connector SDK** | Extensible architecture for integrating external AI assistants. | ✅ Active |
 | **Project Diagnostics** | Built-in environment and database diagnostics (`prometra doctor`). | ✅ Active |

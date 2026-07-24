@@ -202,10 +202,29 @@ def timeline(
     summary: bool = typer.Option(False, "--summary", help="Show summary metrics"),
     export: Optional[str] = typer.Option(None, "--export", help="Export timeline to file (.md, .csv, .json)"),
     json_out: bool = typer.Option(False, "--json", help="Output raw JSON"),
-    markdown_out: bool = typer.Option(False, "--markdown", help="Output raw Markdown")
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output raw Markdown"),
+    checkpoints: bool = typer.Option(False, "--checkpoints", help="Include saved checkpoints in timeline view")
 ):
     """Display interactive chronological project history with filtering and export support."""
     storage = get_storage()
+
+    if checkpoints:
+        from prometra.timemachine.timeline import CheckpointTimeline
+        from rich.table import Table
+        from rich.panel import Panel
+
+        cp_tl = CheckpointTimeline(storage)
+        items = cp_tl.get_timeline_with_checkpoints(session_id=session_id)
+
+        tbl = Table("Time", "Type", "Session", "Summary", expand=True)
+        for item in items:
+            t_str = item["timestamp"].strftime("%Y-%m-%d %H:%M:%S") if item["timestamp"] else "N/A"
+            t_style = "bold yellow" if item["type"] == "checkpoint" else "cyan"
+            tbl.add_row(t_str, f"[{t_style}]{item['event_type']}[/{t_style}]", item["session_id"], item["summary"])
+
+        console.print(Panel(tbl, title="📍 Timeline with Checkpoints", border_style="yellow"))
+        return
+
     engine = TimelineEngine(storage)
     
     filters = TimelineFilter(
@@ -391,7 +410,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 2.2.0")
+    console.print("Prometra Version: 2.3.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -573,3 +592,130 @@ def insights(
 
     except Exception as e:
         console.print(f"[red]Error analyzing session insights:[/red] {str(e)}")
+
+def checkpoint(
+    message: str = typer.Argument("Checkpoint", help="Message summary for checkpoint"),
+    session: Optional[str] = typer.Option(None, "--session", help="Session ID associated with checkpoint")
+):
+    """Create a new local development state checkpoint."""
+    storage = get_storage()
+    from prometra.timemachine.checkpoint import CheckpointManager
+
+    mgr = CheckpointManager(storage)
+    try:
+        cp = mgr.create_checkpoint(message=message, session_id=session)
+        console.print(f"[bold green]✓ Created Checkpoint:[/bold green] [cyan]{cp.id}[/cyan]")
+        console.print(f"Message: {cp.message}")
+        console.print(f"Branch: {cp.git_branch} ({cp.git_commit}) | Files Tracked: {len(cp.modified_files)}")
+    except Exception as e:
+        console.print(f"[red]Error creating checkpoint:[/red] {str(e)}")
+
+def checkpoints(
+    json_out: bool = typer.Option(False, "--json", help="Output checkpoints as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output checkpoints as Markdown"),
+    csv_out: bool = typer.Option(False, "--csv", help="Output checkpoints as CSV")
+):
+    """List all saved local checkpoints."""
+    storage = get_storage()
+    from prometra.timemachine.checkpoint import CheckpointManager
+    from rich.table import Table
+    from rich.panel import Panel
+
+    mgr = CheckpointManager(storage)
+    cps = mgr.list_checkpoints()
+
+    if json_out:
+        import json
+        data = [c.model_dump(mode="json") for c in cps]
+        console.print(json.dumps(data, indent=2))
+        return
+
+    if markdown_out:
+        lines = ["# Prometra Checkpoints", ""]
+        for c in cps:
+            lines.append(f"## {c.id} ({c.timestamp.strftime('%Y-%m-%d %H:%M:%S')})")
+            lines.append(f"- **Message:** {c.message}")
+            lines.append(f"- **Branch:** {c.git_branch} (`{c.git_commit}`)")
+            lines.append(f"- **Productivity Score:** {c.productivity_score}/100")
+            lines.append(f"- **Files Modified:** {len(c.modified_files)}\n")
+        console.print("\n".join(lines))
+        return
+
+    if csv_out:
+        import csv, io
+        out = io.StringIO()
+        w = csv.writer(out)
+        w.writerow(["ID", "Timestamp", "Message", "Branch", "Commit", "FilesCount", "Score"])
+        for c in cps:
+            w.writerow([c.id, c.timestamp.strftime("%Y-%m-%d %H:%M:%S"), c.message, c.git_branch, c.git_commit, len(c.modified_files), c.productivity_score])
+        console.print(out.getvalue())
+        return
+
+    tbl = Table("Checkpoint ID", "Timestamp", "Branch", "Commit", "Files", "Score", "Message", expand=True)
+    for c in cps:
+        t_str = c.timestamp.strftime("%Y-%m-%d %H:%M:%S") if c.timestamp else "N/A"
+        tbl.add_row(f"[cyan]{c.id}[/cyan]", t_str, c.git_branch, c.git_commit, str(len(c.modified_files)), f"{c.productivity_score}/100", c.message)
+
+    console.print(Panel(tbl, title="📍 Prometra Time Machine Checkpoints", border_style="cyan"))
+
+def restore(
+    checkpoint_id: str = typer.Argument(..., help="Checkpoint ID to restore"),
+    confirm: bool = typer.Option(False, "--confirm", "-y", help="Skip interactive confirmation prompt")
+):
+    """Restore project state to a target checkpoint."""
+    from prometra.timemachine.restore import RestoreEngine
+    from rich.table import Table
+    from rich.panel import Panel
+
+    engine = RestoreEngine()
+    try:
+        preview = engine.preview_restore(checkpoint_id)
+
+        console.print(f"[bold yellow]🔍 PREVIEW RESTORE FOR CHECKPOINT:[/bold yellow] [cyan]{checkpoint_id}[/cyan]\n")
+
+        tbl = Table("Change Type", "File Path", expand=True)
+        for f in preview.files_created:
+            tbl.add_row("[green]CREATED (To Add)[/green]", f)
+        for f in preview.files_modified:
+            tbl.add_row("[yellow]MODIFIED (To Overwrite)[/yellow]", f)
+        for f in preview.files_deleted:
+            tbl.add_row("[red]DELETED (To Remove)[/red]", f)
+
+        console.print(Panel(tbl, title="Affected Files Summary", border_style="yellow"))
+        console.print(f"Total Affected: [green]{len(preview.files_created)} created[/green], [yellow]{len(preview.files_modified)} modified[/yellow], [red]{len(preview.files_deleted)} deleted[/red]\n")
+
+        if not confirm:
+            do_restore = typer.confirm("⚠️ Are you sure you want to restore workspace files to this checkpoint?")
+            if not do_restore:
+                console.print("[yellow]Restore operation cancelled.[/yellow]")
+                return
+
+        engine.execute_restore(checkpoint_id)
+        console.print(f"[bold green]✓ Successfully restored workspace to checkpoint '{checkpoint_id}'![/bold green]")
+
+    except Exception as e:
+        console.print(f"[red]Error restoring checkpoint:[/red] {str(e)}")
+
+def compare_checkpoints(
+    checkpoint_a: str = typer.Argument(..., help="First checkpoint ID (A)"),
+    checkpoint_b: str = typer.Argument(..., help="Second checkpoint ID (B)")
+):
+    """Compare differences between any two checkpoints."""
+    from prometra.timemachine.compare import CheckpointComparer
+    from rich.syntax import Syntax
+
+    comparer = CheckpointComparer()
+    try:
+        diff = comparer.compare_checkpoints(checkpoint_a, checkpoint_b)
+
+        console.print(f"[bold cyan]🔍 CHECKPOINT COMPARISON:[/bold cyan] [yellow]{checkpoint_a}[/yellow] vs [green]{checkpoint_b}[/green]\n")
+        console.print(f"Added Files: [green]{len(diff.added_files)}[/green] | Removed Files: [red]{len(diff.removed_files)}[/red] | Modified Files: [yellow]{len(diff.modified_files)}[/yellow]\n")
+
+        if diff.diff_text:
+            syn = Syntax(diff.diff_text, "diff", theme="monokai", line_numbers=True)
+            console.print(Panel(syn, title=f"Diff: {checkpoint_a} ➔ {checkpoint_b}", border_style="cyan"))
+        else:
+            console.print("[dim]No file differences found between checkpoints.[/dim]")
+
+    except Exception as e:
+        console.print(f"[red]Error comparing checkpoints:[/red] {str(e)}")

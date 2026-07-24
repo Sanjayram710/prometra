@@ -16,6 +16,7 @@ from prometra.tui.views import (
     AnalyticsView,
     HelpView,
     InsightsView,
+    TimeMachineView,
 )
 from prometra.storage.sqlite import SQLiteStorage
 
@@ -67,6 +68,7 @@ class PrometraTUI(App):
         Binding("7", "switch_view('analytics')", "Analytics", show=True),
         Binding("8", "switch_view('help')", "Help", show=True),
         Binding("9", "switch_view('insights')", "Insights", show=True),
+        Binding("0", "switch_view('timemachine')", "TimeMachine", show=True),
         Binding("question_mark", "switch_view('help')", "Help", show=False),
         Binding("ctrl+p", "open_palette", "Command Palette", show=True),
         Binding("ctrl+f", "open_search", "Find", show=True),
@@ -92,6 +94,7 @@ class PrometraTUI(App):
             "analytics": AnalyticsView(storage=self.storage, id="view_analytics"),
             "help": HelpView(id="view_help"),
             "insights": InsightsView(storage=self.storage, id="view_insights"),
+            "timemachine": TimeMachineView(storage=self.storage, id="view_timemachine"),
         }
 
     def compose(self) -> ComposeResult:
@@ -151,6 +154,8 @@ class PrometraTUI(App):
                 self.action_switch_view("help")
             elif choice in ("9", "insights", "intelligence"):
                 self.action_switch_view("insights")
+            elif choice in ("0", "10", "timemachine", "checkpoint"):
+                self.action_switch_view("timemachine")
             elif choice in ("theme", "t"):
                 self.action_cycle_theme()
             elif choice in ("refresh", "r"):

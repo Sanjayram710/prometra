@@ -13,6 +13,7 @@ Welcome to the official documentation for **Prometra** – The Local-First Devel
 - **[Analytics Dashboard](dashboard.md)**: Aggregated development insights, file edit rankings, and AI token costs.
 - **[Interactive Terminal UI (TUI)](tui.md)**: Full-screen terminal user interface (`prometra ui`) with 8 views and keyboard navigation.
 - **[AI Session Intelligence Engine](insights.md)**: 100% local-first session analysis, productivity scoring, pattern detection, and recommendations (`prometra insights`).
+- **[Time Machine & Checkpoint System](timemachine.md)**: Local checkpoint snapshots, safe restore workflow, checkpoint comparisons, and TUI View #10 (`prometra checkpoint`).
 - **[Smart Ignore Rules](ignore.md)**: Exclusion rules and `.prometraignore` configuration.
 
 ## Architecture & Integration

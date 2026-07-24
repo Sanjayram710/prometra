@@ -7,6 +7,7 @@ from prometra.tui.views.compare import CompareView
 from prometra.tui.views.analytics import AnalyticsView
 from prometra.tui.views.help_view import HelpView
 from prometra.tui.views.insights_view import InsightsView
+from prometra.tui.views.timemachine_view import TimeMachineView
 
 __all__ = [
     "DashboardView",
@@ -18,4 +19,5 @@ __all__ = [
     "AnalyticsView",
     "HelpView",
     "InsightsView",
+    "TimeMachineView",
 ]

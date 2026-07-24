@@ -72,7 +72,7 @@ class StatusBar(Static):
         self.active_view = active_view
 
     def render(self) -> RenderableType:
-        shortcuts = " [1]Dash [2]Time [3]Repl [4]Srch [5]Diff [6]Comp [7]Anal [8]Help [9]Insights | [Ctrl+P]Cmd | [Ctrl+F]Find | [Ctrl+T]Theme | [Q]Quit"
+        shortcuts = " [1]Dash [2]Time [3]Repl [4]Srch [5]Diff [6]Comp [7]Anal [8]Help [9]Insights [0]TimeMachine | [Ctrl+P]Cmd | [Ctrl+F]Find | [Ctrl+T]Theme | [Q]Quit"
         status_text = Text()
         status_text.append(f" VIEW: {self.active_view.upper()} |", style="bold green")
         status_text.append(shortcuts, style="dim white")
@@ -91,6 +91,7 @@ class CommandPaletteModal(ModalScreen[str]):
         ("7", "Analytics - Codebase Health & Token Usage"),
         ("8", "Help - Keyboard Shortcuts & Documentation"),
         ("9", "Insights - AI Session Intelligence & Recommendations"),
+        ("0", "Time Machine - Checkpoint Browser & State Restore"),
         ("T", "Toggle Theme (Cyan / Dark / Dracula / Contrast)"),
         ("R", "Refresh Data"),
         ("Q", "Quit Prometra TUI"),
@@ -99,7 +100,7 @@ class CommandPaletteModal(ModalScreen[str]):
     def compose(self):
         with Vertical(id="dialog"):
             yield Label("⚡ COMMAND PALETTE", id="palette_title")
-            yield Input(placeholder="Type view number (1-9), action, or filter...", id="palette_input")
+            yield Input(placeholder="Type view number (0-9), action, or filter...", id="palette_input")
             with ListView(id="palette_list"):
                 for key, label in self.COMMANDS:
                     yield ListItem(Label(f"[{key}] {label}"))
@@ -125,6 +126,8 @@ class CommandPaletteModal(ModalScreen[str]):
             self.dismiss("8")
         elif val in ("9", "insights", "intelligence"):
             self.dismiss("9")
+        elif val in ("0", "10", "timemachine", "checkpoint"):
+            self.dismiss("0")
         elif val in ("t", "theme"):
             self.dismiss("theme")
         elif val in ("r", "refresh"):

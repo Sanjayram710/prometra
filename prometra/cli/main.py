@@ -22,6 +22,10 @@ app.command(name="diff")(commands.diff)
 app.command(name="compare")(commands.compare)
 app.command(name="ui")(commands.ui)
 app.command(name="insights")(commands.insights)
+app.command(name="checkpoint")(commands.checkpoint)
+app.command(name="checkpoints")(commands.checkpoints)
+app.command(name="restore")(commands.restore)
+app.command(name="compare-checkpoints")(commands.compare_checkpoints)
 
 from prometra.cli.connectors_cmd import app as connectors_app
 app.add_typer(connectors_app, name="connectors")
