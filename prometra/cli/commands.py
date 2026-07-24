@@ -391,7 +391,7 @@ def config():
 
 def version():
     """Display Prometra version."""
-    console.print("Prometra Version: 2.1.0")
+    console.print("Prometra Version: 2.2.0")
     console.print("Schema Version: 1.0")
 
 def export():
@@ -506,3 +506,70 @@ def ui():
         tui.run()
     except Exception as e:
         console.print(f"[red]Error launching Prometra TUI:[/red] {str(e)}")
+
+def insights(
+    session: Optional[str] = typer.Option(None, "--session", help="Session ID to analyze"),
+    today: bool = typer.Option(False, "--today", help="Analyze today's session"),
+    latest: bool = typer.Option(False, "--latest", help="Analyze the latest recorded session"),
+    json_out: bool = typer.Option(False, "--json", help="Output insights as JSON"),
+    markdown_out: bool = typer.Option(False, "--markdown", help="Output insights as Markdown"),
+    csv_out: bool = typer.Option(False, "--csv", help="Output insights as CSV"),
+):
+    """Analyze development sessions and generate AI session intelligence & recommendations."""
+    storage = get_storage()
+    from prometra.intelligence.analyzer import IntelligenceAnalyzer
+
+    analyzer = IntelligenceAnalyzer(storage)
+    try:
+        result = analyzer.analyze_session(session_id=session)
+
+        if json_out:
+            console.print(analyzer.to_json(result))
+            return
+
+        if markdown_out:
+            console.print(analyzer.to_markdown(result))
+            return
+
+        if csv_out:
+            console.print(analyzer.to_csv(result))
+            return
+
+        # Default Rich Panel Display
+        from rich.panel import Panel
+        from rich.table import Table
+        from rich.text import Text
+
+        s = result.summary
+        c = result.classification
+        p = result.productivity
+        ai = result.ai_usage
+
+        summary_table = Table("Metric", "Value", expand=True)
+        summary_table.add_row("Session ID", s.session_id)
+        summary_table.add_row("Classification", f"[bold cyan]{c.primary_category}[/bold cyan] (Confidence: {c.confidence:.0%})")
+        summary_table.add_row("Productivity Score", f"[bold green]{p.score} / 100[/bold green] ({p.stars})")
+        summary_table.add_row("Duration", f"{s.duration_minutes:.1f} mins ({s.duration_hours:.2f} hrs)")
+        summary_table.add_row("Files Modified / Created / Deleted", f"{s.files_modified} / {s.files_created} / {s.files_deleted}")
+        summary_table.add_row("Git Commits", str(s.git_commits))
+        summary_table.add_row("AI Prompts Used", str(ai.total_prompts))
+        summary_table.add_row("Estimated AI Cost", f"${ai.estimated_cost:.3f}")
+        summary_table.add_row("Languages", ", ".join(s.languages))
+
+        console.print(Panel(summary_table, title="🚀 Prometra AI Session Intelligence", border_style="cyan"))
+
+        if result.patterns:
+            pat_text = Text()
+            for pat in result.patterns:
+                pat_text.append(f"• [{pat.name}] ({pat.severity}): {pat.description}\n", style="yellow")
+            console.print(Panel(pat_text, title="🔍 Detected Coding Patterns", border_style="yellow"))
+
+        if result.recommendations:
+            rec_text = Text()
+            for rec in result.recommendations:
+                rec_text.append(f"• {rec.title} ({rec.priority.upper()}):\n", style="bold cyan")
+                rec_text.append(f"  {rec.action_item}\n\n", style="dim white")
+            console.print(Panel(rec_text, title="💡 Actionable Developer Recommendations", border_style="green"))
+
+    except Exception as e:
+        console.print(f"[red]Error analyzing session insights:[/red] {str(e)}")

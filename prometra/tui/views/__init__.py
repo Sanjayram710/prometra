@@ -6,6 +6,7 @@ from prometra.tui.views.diff_view import DiffView
 from prometra.tui.views.compare import CompareView
 from prometra.tui.views.analytics import AnalyticsView
 from prometra.tui.views.help_view import HelpView
+from prometra.tui.views.insights_view import InsightsView
 
 __all__ = [
     "DashboardView",
@@ -16,4 +17,5 @@ __all__ = [
     "CompareView",
     "AnalyticsView",
     "HelpView",
+    "InsightsView",
 ]

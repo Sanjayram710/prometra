@@ -15,6 +15,7 @@ from prometra.tui.views import (
     CompareView,
     AnalyticsView,
     HelpView,
+    InsightsView,
 )
 from prometra.storage.sqlite import SQLiteStorage
 
@@ -65,6 +66,7 @@ class PrometraTUI(App):
         Binding("6", "switch_view('compare')", "Compare", show=True),
         Binding("7", "switch_view('analytics')", "Analytics", show=True),
         Binding("8", "switch_view('help')", "Help", show=True),
+        Binding("9", "switch_view('insights')", "Insights", show=True),
         Binding("question_mark", "switch_view('help')", "Help", show=False),
         Binding("ctrl+p", "open_palette", "Command Palette", show=True),
         Binding("ctrl+f", "open_search", "Find", show=True),
@@ -89,6 +91,7 @@ class PrometraTUI(App):
             "compare": CompareView(storage=self.storage, id="view_compare"),
             "analytics": AnalyticsView(storage=self.storage, id="view_analytics"),
             "help": HelpView(id="view_help"),
+            "insights": InsightsView(storage=self.storage, id="view_insights"),
         }
 
     def compose(self) -> ComposeResult:
@@ -146,6 +149,8 @@ class PrometraTUI(App):
                 self.action_switch_view("analytics")
             elif choice in ("8", "help", "?"):
                 self.action_switch_view("help")
+            elif choice in ("9", "insights", "intelligence"):
+                self.action_switch_view("insights")
             elif choice in ("theme", "t"):
                 self.action_cycle_theme()
             elif choice in ("refresh", "r"):

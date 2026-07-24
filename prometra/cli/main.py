@@ -21,6 +21,7 @@ app.command(name="export")(commands.export)
 app.command(name="diff")(commands.diff)
 app.command(name="compare")(commands.compare)
 app.command(name="ui")(commands.ui)
+app.command(name="insights")(commands.insights)
 
 from prometra.cli.connectors_cmd import app as connectors_app
 app.add_typer(connectors_app, name="connectors")
