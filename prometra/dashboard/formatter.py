@@ -1,5 +1,7 @@
 import json
+
 from prometra.dashboard.metrics import DashboardMetrics
+
 
 class DashboardFormatter:
     """Formats DashboardMetrics into JSON and Markdown representations."""
@@ -12,11 +14,15 @@ class DashboardFormatter:
     def to_markdown(cls, metrics: DashboardMetrics) -> str:
         sess = metrics.sessions
         dur = sess.total_duration_seconds
-        dur_str = f"{dur // 3600}h {(dur % 3600) // 60}m {dur % 60}s" if dur >= 3600 else f"{dur // 60}m {dur % 60}s"
-        
+        dur_str = (
+            f"{dur // 3600}h {(dur % 3600) // 60}m {dur % 60}s"
+            if dur >= 3600
+            else f"{dur // 60}m {dur % 60}s"
+        )
+
         long_dur = sess.longest_session_seconds
         long_str = f"{long_dur // 60}m" if long_dur >= 60 else f"{long_dur}s"
-        
+
         avg_dur = sess.avg_session_length_seconds
         avg_str = f"{avg_dur // 60}m" if avg_dur >= 60 else f"{avg_dur}s"
 
@@ -42,7 +48,7 @@ class DashboardFormatter:
             f"- **Total Tokens:** `{metrics.ai.total_tokens}` (Prompt: `{metrics.ai.prompt_tokens}`, Completion: `{metrics.ai.completion_tokens}`)",
             f"- **Estimated Cost:** `${metrics.ai.estimated_cost:.4f}`",
             f"- **Connectors Used:** `{', '.join(metrics.ai.connectors_used) if metrics.ai.connectors_used else 'None'}`\n",
-            "## 🏆 Top Edited Files"
+            "## 🏆 Top Edited Files",
         ]
 
         if metrics.filesystem.top_edited_files:
@@ -59,7 +65,11 @@ class DashboardFormatter:
             lines.append("- No AI model interactions recorded.")
 
         if metrics.activity.top_active_hours:
-            hours_str = ", ".join(f"{h:02d}:00" for h in metrics.activity.top_active_hours)
-            lines.append(f"\n## ⏰ Peak Activity Hours\n- Most active hours: `{hours_str}`")
+            hours_str = ", ".join(
+                f"{h:02d}:00" for h in metrics.activity.top_active_hours
+            )
+            lines.append(
+                f"\n## ⏰ Peak Activity Hours\n- Most active hours: `{hours_str}`"
+            )
 
         return "\n".join(lines)

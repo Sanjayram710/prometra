@@ -1,10 +1,12 @@
-from typing import Dict, Any, List
 from pydantic import BaseModel, Field
-from prometra.timeline.queries import TimelineQueryEngine
+
 from prometra.timeline.filters import TimelineFilter
+from prometra.timeline.queries import TimelineQueryEngine
+
 
 class SummaryMetrics(BaseModel):
     """Container for timeline summary metrics."""
+
     sessions_count: int = 0
     files_modified: int = 0
     git_commits: int = 0
@@ -16,8 +18,9 @@ class SummaryMetrics(BaseModel):
     input_tokens: int = 0
     output_tokens: int = 0
     estimated_cost: float = 0.0
-    connectors_used: List[str] = Field(default_factory=list)
+    connectors_used: list[str] = Field(default_factory=list)
     total_events: int = 0
+
 
 class TimelineSummaryGenerator:
     """Generates summary statistics for Prometra timelines."""
@@ -40,5 +43,5 @@ class TimelineSummaryGenerator:
             output_tokens=raw_data.get("output_tokens", 0),
             estimated_cost=raw_data.get("estimated_cost", 0.0),
             connectors_used=raw_data.get("connectors_used", []),
-            total_events=raw_data.get("total_events", 0)
+            total_events=raw_data.get("total_events", 0),
         )

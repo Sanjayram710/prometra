@@ -1,21 +1,24 @@
-import pytest
-import os
-import json
-import tempfile
 import datetime
+import json
+import os
+import tempfile
+
+import pytest
 from typer.testing import CliRunner
 
 from prometra.cli.main import app
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, AiEventModel, SessionModel
-from prometra.timeline.engine import TimelineEngine
-from prometra.diff.engine import DiffEngine
-from prometra.diff.models import FileVersion, DiffResult
-from prometra.diff.formatter import DiffFormatter
-from prometra.diff.exporter import DiffExporter
 from prometra.core.time import utcnow
+from prometra.diff.engine import DiffEngine
+from prometra.diff.exporter import DiffExporter
+from prometra.storage.models import (
+    AiEventModel,
+    SessionModel,
+    TimelineEventModel,
+)
+from prometra.storage.sqlite import SQLiteStorage
 
 runner = CliRunner()
+
 
 @pytest.fixture
 def temp_storage():
@@ -27,10 +30,11 @@ def temp_storage():
         finally:
             storage.engine.dispose()
 
+
 @pytest.fixture
 def populated_diff_db(temp_storage):
     db = temp_storage.get_session()
-    
+
     s1 = SessionModel(
         session_id="sess-1",
         project_id="test_proj",
@@ -38,7 +42,7 @@ def populated_diff_db(temp_storage):
         duration_seconds=3600,
         project_path="/app",
         working_directory="/app",
-        status="completed"
+        status="completed",
     )
     db.add(s1)
 
@@ -49,7 +53,7 @@ def populated_diff_db(temp_storage):
         source="filesystem",
         session_id="sess-1",
         related_event_ids=["fs-1"],
-        summary="File modified: hello.py"
+        summary="File modified: hello.py",
     )
     db.add(tl1)
 
@@ -60,7 +64,7 @@ def populated_diff_db(temp_storage):
         event_type="FileModified",
         connector="filesystem",
         description="Modified hello.py",
-        extra_metadata={"path": "hello.py", "content": 'print("Hello")\n'}
+        extra_metadata={"path": "hello.py", "content": 'print("Hello")\n'},
     )
     db.add(ai1)
 
@@ -71,7 +75,7 @@ def populated_diff_db(temp_storage):
         source="filesystem",
         session_id="sess-1",
         related_event_ids=["fs-2"],
-        summary="File modified: hello.py"
+        summary="File modified: hello.py",
     )
     db.add(tl2)
 
@@ -82,7 +86,10 @@ def populated_diff_db(temp_storage):
         event_type="FileModified",
         connector="filesystem",
         description="Modified hello.py",
-        extra_metadata={"path": "hello.py", "content": 'print("Hello World")\nprint("Welcome")\n'}
+        extra_metadata={
+            "path": "hello.py",
+            "content": 'print("Hello World")\nprint("Welcome")\n',
+        },
     )
     db.add(ai2)
 
@@ -93,7 +100,7 @@ def populated_diff_db(temp_storage):
         source="filesystem",
         session_id="sess-1",
         related_event_ids=["fs-3"],
-        summary="File modified: hello.py"
+        summary="File modified: hello.py",
     )
     db.add(tl3)
 
@@ -104,13 +111,17 @@ def populated_diff_db(temp_storage):
         event_type="FileModified",
         connector="filesystem",
         description="Modified hello.py",
-        extra_metadata={"path": "hello.py", "content": 'print("Hello World!")\nprint("Welcome to Prometra")\n'}
+        extra_metadata={
+            "path": "hello.py",
+            "content": 'print("Hello World!")\nprint("Welcome to Prometra")\n',
+        },
     )
     db.add(ai3)
 
     db.commit()
     db.close()
     return temp_storage
+
 
 def test_basic_diff(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
@@ -121,7 +132,8 @@ def test_basic_diff(populated_diff_db):
     assert res.modified_lines == 1
     assert res.added_lines == 1
     assert res.removed_lines == 0
-    assert 'Hello' in res.diff
+    assert "Hello" in res.diff
+
 
 def test_identical_versions(temp_storage):
     db = temp_storage.get_session()
@@ -132,7 +144,7 @@ def test_identical_versions(temp_storage):
         source="filesystem",
         session_id="sess-1",
         related_event_ids=["fs-identical-1"],
-        summary="File modified: same.py"
+        summary="File modified: same.py",
     )
     tl2 = TimelineEventModel(
         normalized_event_type="filesystem",
@@ -141,7 +153,7 @@ def test_identical_versions(temp_storage):
         source="filesystem",
         session_id="sess-1",
         related_event_ids=["fs-identical-2"],
-        summary="File modified: same.py"
+        summary="File modified: same.py",
     )
     ai1 = AiEventModel(
         event_id="fs-identical-1",
@@ -149,7 +161,7 @@ def test_identical_versions(temp_storage):
         timestamp=utcnow() - datetime.timedelta(hours=1),
         event_type="FileModified",
         connector="filesystem",
-        extra_metadata={"path": "same.py", "content": "same content\n"}
+        extra_metadata={"path": "same.py", "content": "same content\n"},
     )
     ai2 = AiEventModel(
         event_id="fs-identical-2",
@@ -157,7 +169,7 @@ def test_identical_versions(temp_storage):
         timestamp=utcnow() - datetime.timedelta(minutes=30),
         event_type="FileModified",
         connector="filesystem",
-        extra_metadata={"path": "same.py", "content": "same content\n"}
+        extra_metadata={"path": "same.py", "content": "same content\n"},
     )
     db.add_all([tl1, tl2, ai1, ai2])
     db.commit()
@@ -170,6 +182,7 @@ def test_identical_versions(temp_storage):
     assert res.modified_lines == 0
     assert res.diff == ""
 
+
 def test_multiple_versions(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
     res_1_3 = engine.compute_diff("hello.py", from_event=1, to_event=3)
@@ -180,10 +193,12 @@ def test_multiple_versions(populated_diff_db):
     assert res_2_3.event_from == 2
     assert res_2_3.event_to == 3
 
+
 def test_session_filter(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
     res = engine.compute_diff("hello.py", session_id="sess-1")
     assert res.session_id == "sess-1"
+
 
 def test_event_filter(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
@@ -191,12 +206,14 @@ def test_event_filter(populated_diff_db):
     assert res.event_from == 1
     assert res.event_to == 2
 
+
 def test_markdown_export(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
     res = engine.compute_diff("hello.py", from_event=1, to_event=2)
     md = DiffExporter.to_markdown(res)
     assert "# File Diff" in md
     assert "```diff" in md
+
 
 def test_json_export(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
@@ -207,11 +224,13 @@ def test_json_export(populated_diff_db):
     assert data["event_from"] == 1
     assert data["event_to"] == 2
 
+
 def test_invalid_file(temp_storage):
     engine = DiffEngine(temp_storage)
     with pytest.raises(ValueError) as excinfo:
         engine.compute_diff("nonexistent_file_xyz.py")
     assert "not found" in str(excinfo.value)
+
 
 def test_missing_event(populated_diff_db):
     engine = DiffEngine(populated_diff_db)
@@ -219,11 +238,13 @@ def test_missing_event(populated_diff_db):
         engine.compute_diff("hello.py", from_event=999, to_event=2)
     assert "Event 999 not found" in str(excinfo.value)
 
+
 def test_no_history(temp_storage):
     engine = DiffEngine(temp_storage)
     with pytest.raises(ValueError) as excinfo:
         engine.compute_diff("empty_history.py")
     assert "not found" in str(excinfo.value) or "No event history" in str(excinfo.value)
+
 
 def test_cli_diff(monkeypatch, populated_diff_db):
     monkeypatch.setattr("prometra.cli.commands.get_storage", lambda: populated_diff_db)
@@ -232,6 +253,8 @@ def test_cli_diff(monkeypatch, populated_diff_db):
     assert res_help.exit_code == 0
     assert "FILE_PATH" in res_help.stdout or "Inspect changes" in res_help.stdout
 
-    res_json = runner.invoke(app, ["diff", "hello.py", "--from-event", "1", "--to-event", "2", "--json"])
+    res_json = runner.invoke(
+        app, ["diff", "hello.py", "--from-event", "1", "--to-event", "2", "--json"]
+    )
     assert res_json.exit_code == 0
     assert '"file": "hello.py"' in res_json.stdout

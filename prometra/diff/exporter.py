@@ -1,5 +1,6 @@
-from prometra.diff.models import DiffResult
 from prometra.diff.formatter import DiffFormatter
+from prometra.diff.models import DiffResult
+
 
 class DiffExporter:
     """Exporter for saving or outputting DiffResult in various formats."""

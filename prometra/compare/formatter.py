@@ -1,12 +1,14 @@
 import json
-from typing import Dict, Any
+from typing import Any
+
 from prometra.compare.models import CompareResult
+
 
 class CompareFormatter:
     """Formatter for converting CompareResult into Markdown or JSON outputs."""
 
     @staticmethod
-    def to_dict(result: CompareResult) -> Dict[str, Any]:
+    def to_dict(result: CompareResult) -> dict[str, Any]:
         """Convert CompareResult to exact JSON dictionary structure."""
         return {
             "session_a": result.session_a,
@@ -17,7 +19,7 @@ class CompareFormatter:
             "files_deleted_difference": result.files_deleted_difference,
             "git_commit_difference": result.git_commit_difference,
             "ai_event_difference": result.ai_event_difference,
-            "timeline_difference": result.timeline_difference
+            "timeline_difference": result.timeline_difference,
         }
 
     @staticmethod
@@ -41,7 +43,11 @@ class CompareFormatter:
             "",
             "## Summary Table",
             "",
-            "| Metric | Session A (`" + str(result.session_a) + "`) | Session B (`" + str(result.session_b) + "`) | Difference |",
+            "| Metric | Session A (`"
+            + str(result.session_a)
+            + "`) | Session B (`"
+            + str(result.session_b)
+            + "`) | Difference |",
             "| :--- | :--- | :--- | :--- |",
             f"| **Duration** | {result.stats_a.duration_minutes} min | {result.stats_b.duration_minutes} min | {dur_sign}{result.stats_b.duration_minutes - result.stats_a.duration_minutes} min |",
             f"| **Files Created** | {result.stats_a.files_created} | {result.stats_b.files_created} | {files_cr_sign}{result.files_created_difference} |",
@@ -68,10 +74,12 @@ class CompareFormatter:
         else:
             lines.append("- None recorded")
 
-        lines.extend([
-            "",
-            "**Session B:**",
-        ])
+        lines.extend(
+            [
+                "",
+                "**Session B:**",
+            ]
+        )
 
         if result.stats_b.event_type_distribution:
             for k, v in result.stats_b.event_type_distribution.items():
@@ -79,16 +87,18 @@ class CompareFormatter:
         else:
             lines.append("- None recorded")
 
-        lines.extend([
-            "",
-            "## Statistics & Productivity",
-            "",
-            "| Metric | Session A | Session B |",
-            "| :--- | :--- | :--- |",
-            f"| **Events / Minute** | {result.stats_a.productivity_metrics.get('events_per_minute', 0)} | {result.stats_b.productivity_metrics.get('events_per_minute', 0)} |",
-            f"| **Files Changed / Minute** | {result.stats_a.productivity_metrics.get('files_changed_per_minute', 0)} | {result.stats_b.productivity_metrics.get('files_changed_per_minute', 0)} |",
-            f"| **Commits / Hour** | {result.stats_a.productivity_metrics.get('commits_per_hour', 0)} | {result.stats_b.productivity_metrics.get('commits_per_hour', 0)} |",
-            ""
-        ])
+        lines.extend(
+            [
+                "",
+                "## Statistics & Productivity",
+                "",
+                "| Metric | Session A | Session B |",
+                "| :--- | :--- | :--- |",
+                f"| **Events / Minute** | {result.stats_a.productivity_metrics.get('events_per_minute', 0)} | {result.stats_b.productivity_metrics.get('events_per_minute', 0)} |",
+                f"| **Files Changed / Minute** | {result.stats_a.productivity_metrics.get('files_changed_per_minute', 0)} | {result.stats_b.productivity_metrics.get('files_changed_per_minute', 0)} |",
+                f"| **Commits / Hour** | {result.stats_a.productivity_metrics.get('commits_per_hour', 0)} | {result.stats_b.productivity_metrics.get('commits_per_hour', 0)} |",
+                "",
+            ]
+        )
 
         return "\n".join(lines)

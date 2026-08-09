@@ -1,6 +1,8 @@
 import os
-from prometra.dashboard.metrics import DashboardMetrics
+
 from prometra.dashboard.formatter import DashboardFormatter
+from prometra.dashboard.metrics import DashboardMetrics
+
 
 class DashboardExporter:
     """Exports analytics dashboard metrics to file (.md, .json)."""

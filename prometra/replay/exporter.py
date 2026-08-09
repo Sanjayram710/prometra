@@ -1,13 +1,20 @@
 import os
-from typing import List, Dict, Any
-from prometra.storage.models import TimelineEventModel
+from typing import Any
+
 from prometra.replay.formatter import ReplayFormatter
+from prometra.storage.models import TimelineEventModel
+
 
 class ReplayExporter:
     """Exports session replay data to file paths (.md, .json)."""
 
     @classmethod
-    def export(cls, session_info: Dict[str, Any], events: List[TimelineEventModel], export_path: str) -> str:
+    def export(
+        cls,
+        session_info: dict[str, Any],
+        events: list[TimelineEventModel],
+        export_path: str,
+    ) -> str:
         ext = os.path.splitext(export_path)[1].lower()
         if ext == ".json":
             content = ReplayFormatter.to_json(session_info, events)

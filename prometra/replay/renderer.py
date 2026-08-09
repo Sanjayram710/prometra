@@ -1,15 +1,16 @@
-from typing import List, Dict, Any, Optional
+from typing import Any
+
 from rich.console import Console
 from rich.panel import Panel
-from rich.table import Table
-from rich.text import Text
-from prometra.storage.models import TimelineEventModel
+
 from prometra.replay.formatter import ReplayFormatter
+from prometra.storage.models import TimelineEventModel
+
 
 class ReplayRenderer:
     """Rich terminal renderer for Prometra session replay."""
 
-    def __init__(self, console: Optional[Console] = None):
+    def __init__(self, console: Console | None = None):
         self.console = console or Console()
 
     def get_event_color(self, event_type: str) -> str:
@@ -32,7 +33,7 @@ class ReplayRenderer:
             return "magenta"
         return "white"
 
-    def render_session_header(self, session_info: Dict[str, Any]):
+    def render_session_header(self, session_info: dict[str, Any]):
         """Render session header panel."""
         sess_id = session_info.get("session_id", "Unknown")
         dur = session_info.get("duration_seconds", 0)
@@ -46,19 +47,39 @@ class ReplayRenderer:
             f"[bold white]Events[/bold white]: [cyan]{total}[/cyan] | "
             f"[bold white]Status[/bold white]: [green]{status}[/green]"
         )
-        self.console.print(Panel(text, title="[bold cyan]Prometra Session Replay[/bold cyan]", border_style="cyan", expand=True))
+        self.console.print(
+            Panel(
+                text,
+                title="[bold cyan]Prometra Session Replay[/bold cyan]",
+                border_style="cyan",
+                expand=True,
+            )
+        )
 
-    def render_event(self, e: TimelineEventModel, step_number: Optional[int] = None, total_steps: Optional[int] = None):
+    def render_event(
+        self,
+        e: TimelineEventModel,
+        step_number: int | None = None,
+        total_steps: int | None = None,
+    ):
         """Render a single replay event line."""
         icon = ReplayFormatter.get_event_icon(e.normalized_event_type)
         color = self.get_event_color(e.normalized_event_type)
 
-        ts_str = str(e.timestamp).split(" ")[-1][:8] if e.timestamp and " " in str(e.timestamp) else str(e.timestamp or "")
+        ts_str = (
+            str(e.timestamp).split(" ")[-1][:8]
+            if e.timestamp and " " in str(e.timestamp)
+            else str(e.timestamp or "")
+        )
         cat = e.normalized_event_type or "Event"
         src = e.source or "system"
         summary = e.summary or ""
 
-        step_prefix = f"[dim][{step_number}/{total_steps}][/dim] " if step_number and total_steps else ""
+        step_prefix = (
+            f"[dim][{step_number}/{total_steps}][/dim] "
+            if step_number and total_steps
+            else ""
+        )
 
         line = (
             f"{step_prefix}[dim]{ts_str}[/dim] {icon} [{color} bold]{cat}[/{color} bold] "
@@ -66,7 +87,13 @@ class ReplayRenderer:
         )
         self.console.print(line)
 
-    def render_footer(self, session_info: Dict[str, Any]):
+    def render_footer(self, session_info: dict[str, Any]):
         """Render session complete footer."""
         sess_id = session_info.get("session_id", "")
-        self.console.print(Panel(f"[bold green][DONE] Replay finished for session #{sess_id}[/bold green]", border_style="green", expand=True))
+        self.console.print(
+            Panel(
+                f"[bold green][DONE] Replay finished for session #{sess_id}[/bold green]",
+                border_style="green",
+                expand=True,
+            )
+        )

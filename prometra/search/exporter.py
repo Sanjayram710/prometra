@@ -1,6 +1,8 @@
 import os
-from prometra.search.models import SearchResultSet
+
 from prometra.search.formatter import SearchFormatter
+from prometra.search.models import SearchResultSet
+
 
 class SearchExporter:
     """Exports search results to specified file formats (.md, .json)."""

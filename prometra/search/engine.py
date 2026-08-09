@@ -1,11 +1,11 @@
-import time
 import datetime
-from typing import Optional, List, Dict, Any, Union
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel
-from prometra.search.models import SearchFilter, SearchResultItem, SearchResultSet
+import time
+
 from prometra.search.filters import FilterValidator
+from prometra.search.models import SearchResultItem, SearchResultSet
 from prometra.search.query_builder import SearchQueryBuilder
+from prometra.storage.sqlite import SQLiteStorage
+
 
 class SearchEngine:
     """Core search engine for executing query searches and measuring performance."""
@@ -17,14 +17,14 @@ class SearchEngine:
     def search_events(
         self,
         query: str,
-        category: Optional[str] = None,
-        session: Optional[str] = None,
-        since: Optional[Union[str, datetime.datetime]] = None,
-        until: Optional[Union[str, datetime.datetime]] = None,
+        category: str | None = None,
+        session: str | None = None,
+        since: str | datetime.datetime | None = None,
+        until: str | datetime.datetime | None = None,
         today: bool = False,
         week: bool = False,
-        limit: Optional[int] = None,
-        export: Optional[str] = None
+        limit: int | None = None,
+        export: str | None = None,
     ) -> SearchResultSet:
         """Execute intelligent search over stored timeline events and return SearchResultSet."""
         start_time = time.perf_counter()
@@ -38,17 +38,17 @@ class SearchEngine:
             today=today,
             week=week,
             limit=limit,
-            export=export
+            export=export,
         )
 
         db = self.storage.get_session()
         try:
             sql_query = self.query_builder.build_query(db, search_filter)
             db_records = sql_query.all()
-            
+
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
 
-            results: List[SearchResultItem] = []
+            results: list[SearchResultItem] = []
             for r in db_records:
                 # Determine which field matched the query
                 q_lower = (query or "").lower()
@@ -69,25 +69,32 @@ class SearchEngine:
                         actor_tool=r.actor_tool,
                         session_id=r.session_id,
                         summary=r.summary or "",
-                        matched_field=matched_field
+                        matched_field=matched_field,
                     )
                 )
 
             applied = {}
-            if category: applied["category"] = category
-            if session: applied["session"] = session
-            if today: applied["time_window"] = "today"
-            elif week: applied["time_window"] = "week"
-            if since: applied["since"] = str(since)
-            if until: applied["until"] = str(until)
-            if limit: applied["limit"] = limit
+            if category:
+                applied["category"] = category
+            if session:
+                applied["session"] = session
+            if today:
+                applied["time_window"] = "today"
+            elif week:
+                applied["time_window"] = "week"
+            if since:
+                applied["since"] = str(since)
+            if until:
+                applied["until"] = str(until)
+            if limit:
+                applied["limit"] = limit
 
             return SearchResultSet(
                 query=query or "",
                 applied_filters=applied,
                 total_results=len(results),
                 execution_time_ms=elapsed_ms,
-                results=results
+                results=results,
             )
         finally:
             db.close()

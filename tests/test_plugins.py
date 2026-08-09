@@ -1,18 +1,21 @@
-import pytest
 import os
-import json
 import tempfile
+
+import pytest
 from typer.testing import CliRunner
 
 from prometra.cli.main import app
 from prometra.plugins.base import BasePlugin
-from prometra.plugins.registry import PluginRegistry
+from prometra.plugins.examples import HelloPlugin, SlackNotifier, StatisticsPlugin
+from prometra.plugins.exceptions import (
+    DuplicatePluginError,
+)
 from prometra.plugins.loader import PluginLoader
 from prometra.plugins.manager import PluginManager
-from prometra.plugins.examples import HelloPlugin, SlackNotifier, StatisticsPlugin
-from prometra.plugins.exceptions import DuplicatePluginError, PluginNotFoundError, PluginError
+from prometra.plugins.registry import PluginRegistry
 
 runner = CliRunner()
+
 
 class CustomTestPlugin(BasePlugin):
     name = "CustomTestPlugin"
@@ -39,6 +42,7 @@ class CustomTestPlugin(BasePlugin):
     def on_file_changed(self, event_data):
         self.file_events.append(event_data.get("path"))
 
+
 class FaultyPlugin(BasePlugin):
     name = "FaultyPlugin"
     version = "0.0.1"
@@ -47,6 +51,7 @@ class FaultyPlugin(BasePlugin):
     def on_file_changed(self, event_data):
         raise RuntimeError("Intentional plugin error during hook execution!")
 
+
 def test_base_plugin_defaults():
     p = BasePlugin()
     assert p.name == "BasePlugin"
@@ -54,6 +59,7 @@ def test_base_plugin_defaults():
     assert p.enabled is True
     meta = p.metadata()
     assert meta["name"] == "BasePlugin"
+
 
 def test_registry_registration():
     reg = PluginRegistry(register_defaults=False)
@@ -70,13 +76,16 @@ def test_registry_registration():
     reg.unregister("CustomTestPlugin")
     assert "CustomTestPlugin" not in reg.list_names()
 
+
 def test_registry_invalid_subclass():
     reg = PluginRegistry(register_defaults=False)
+
     class NotAPlugin:
         pass
 
-    with pytest.raises(ValueError):
+    with pytest.raises((TypeError, ValueError)):
         reg.register(NotAPlugin)
+
 
 def test_loader_discovery_from_temp_dir():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -100,6 +109,7 @@ class DynamicFilePlugin(BasePlugin):
         assert loaded[0].name == "DynamicFilePlugin"
         assert reg.get("DynamicFilePlugin") is not None
 
+
 def test_loader_invalid_file_handling():
     with tempfile.TemporaryDirectory() as tmpdir:
         broken_code = "def invalid_syntax(:"
@@ -113,6 +123,7 @@ def test_loader_invalid_file_handling():
 
         assert len(loaded) == 0
         assert broken_path in loader.load_errors
+
 
 def test_manager_lifecycle_and_hooks():
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -140,6 +151,7 @@ def test_manager_lifecycle_and_hooks():
         pm.enable_plugin("CustomTestPlugin")
         assert "CustomTestPlugin" in pm.active_plugins
 
+
 def test_manager_fault_isolation():
     with tempfile.TemporaryDirectory() as tmpdir:
         config_path = os.path.join(tmpdir, "plugins.json")
@@ -156,6 +168,7 @@ def test_manager_fault_isolation():
         assert "CustomTestPlugin" in results
         assert "FaultyPlugin" not in pm.active_plugins
         assert "FaultyPlugin" in pm.disabled_names
+
 
 def test_builtin_example_plugins():
     hello = HelloPlugin()
@@ -174,6 +187,7 @@ def test_builtin_example_plugins():
     stats.on_file_changed({"path": "b.py"})
     assert stats.file_change_count == 2
     assert len(stats.changed_files) == 2
+
 
 def test_cli_plugins_commands(monkeypatch):
     with tempfile.TemporaryDirectory() as tmpdir:

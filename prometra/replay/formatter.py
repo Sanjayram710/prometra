@@ -1,6 +1,8 @@
 import json
-from typing import List, Dict, Any
+from typing import Any
+
 from prometra.storage.models import TimelineEventModel
+
 
 class ReplayFormatter:
     """Formats session replay data for JSON and Markdown representations."""
@@ -27,25 +29,28 @@ class ReplayFormatter:
         return "[*]"
 
     @classmethod
-    def to_json(cls, session_info: Dict[str, Any], events: List[TimelineEventModel]) -> str:
+    def to_json(
+        cls, session_info: dict[str, Any], events: list[TimelineEventModel]
+    ) -> str:
         event_list = []
         for e in events:
-            event_list.append({
-                "id": e.id,
-                "timestamp": str(e.timestamp) if e.timestamp else "",
-                "event_type": e.normalized_event_type or "",
-                "source": e.source or "",
-                "summary": e.summary or "",
-                "sequence": e.sequence
-            })
-        data = {
-            "session_info": session_info,
-            "events": event_list
-        }
+            event_list.append(
+                {
+                    "id": e.id,
+                    "timestamp": str(e.timestamp) if e.timestamp else "",
+                    "event_type": e.normalized_event_type or "",
+                    "source": e.source or "",
+                    "summary": e.summary or "",
+                    "sequence": e.sequence,
+                }
+            )
+        data = {"session_info": session_info, "events": event_list}
         return json.dumps(data, indent=2)
 
     @classmethod
-    def to_markdown(cls, session_info: Dict[str, Any], events: List[TimelineEventModel]) -> str:
+    def to_markdown(
+        cls, session_info: dict[str, Any], events: list[TimelineEventModel]
+    ) -> str:
         dur = session_info.get("duration_seconds", 0)
         dur_str = f"{dur // 60}m {dur % 60}s" if dur >= 60 else f"{dur}s"
 
@@ -56,12 +61,16 @@ class ReplayFormatter:
             f"- **Total Events:** `{session_info.get('total_events', len(events))}`",
             f"- **Status:** `{session_info.get('status', 'completed')}`\n",
             "---",
-            "\n### Replay Timeline\n"
+            "\n### Replay Timeline\n",
         ]
 
         for e in events:
             icon = cls.get_event_icon(e.normalized_event_type)
-            ts = str(e.timestamp).split(" ")[-1][:8] if e.timestamp and " " in str(e.timestamp) else str(e.timestamp)
+            ts = (
+                str(e.timestamp).split(" ")[-1][:8]
+                if e.timestamp and " " in str(e.timestamp)
+                else str(e.timestamp)
+            )
             net = e.normalized_event_type or "Event"
             src = e.source or "system"
             summary = e.summary or ""

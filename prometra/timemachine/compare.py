@@ -1,18 +1,22 @@
-import os
 import difflib
-from typing import Optional, List, Dict, Any
+import os
 
-from prometra.timemachine.models import CheckpointDiff, CheckpointModel
+from prometra.timemachine.models import CheckpointDiff
 from prometra.timemachine.storage import CheckpointStorage
+
 
 class CheckpointComparer:
     """Computes file diffs and metrics comparisons between any two checkpoints."""
 
-    def __init__(self, root_dir: Optional[str] = None):
+    def __init__(self, root_dir: str | None = None):
         self.root_dir = root_dir or os.path.abspath(".")
-        self.cp_storage = CheckpointStorage(root_dir=os.path.join(self.root_dir, ".prometra"))
+        self.cp_storage = CheckpointStorage(
+            root_dir=os.path.join(self.root_dir, ".prometra")
+        )
 
-    def compare_checkpoints(self, checkpoint_a: str, checkpoint_b: str) -> CheckpointDiff:
+    def compare_checkpoints(
+        self, checkpoint_a: str, checkpoint_b: str
+    ) -> CheckpointDiff:
         """Compare two checkpoints and return added, removed, modified files, and unified diff."""
         cp1 = self.cp_storage.load_checkpoint(checkpoint_a)
         cp2 = self.cp_storage.load_checkpoint(checkpoint_b)
@@ -25,15 +29,15 @@ class CheckpointComparer:
         hashes1 = cp1.file_hashes or {}
         hashes2 = cp2.file_hashes or {}
 
-        added_files: List[str] = []
-        removed_files: List[str] = []
-        modified_files: List[str] = []
+        added_files: list[str] = []
+        removed_files: list[str] = []
+        modified_files: list[str] = []
 
         all_paths = set(hashes1.keys()).union(set(hashes2.keys()))
 
-        diff_chunks: List[str] = []
+        diff_chunks: list[str] = []
 
-        for path in sorted(list(all_paths)):
+        for path in sorted(all_paths):
             in1 = path in hashes1
             in2 = path in hashes2
 
@@ -51,12 +55,14 @@ class CheckpointComparer:
                 lines1 = c1.splitlines(keepends=True)
                 lines2 = c2.splitlines(keepends=True)
 
-                u_diff = list(difflib.unified_diff(
-                    lines1,
-                    lines2,
-                    fromfile=f"a/{path} ({cp1.id})",
-                    tofile=f"b/{path} ({cp2.id})"
-                ))
+                u_diff = list(
+                    difflib.unified_diff(
+                        lines1,
+                        lines2,
+                        fromfile=f"a/{path} ({cp1.id})",
+                        tofile=f"b/{path} ({cp2.id})",
+                    )
+                )
                 if u_diff:
                     diff_chunks.extend(u_diff)
 
@@ -68,5 +74,5 @@ class CheckpointComparer:
             added_files=added_files,
             removed_files=removed_files,
             modified_files=modified_files,
-            diff_text=diff_text
+            diff_text=diff_text,
         )

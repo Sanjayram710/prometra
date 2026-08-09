@@ -1,11 +1,13 @@
-from typing import Optional
+
 from rich.console import Console
+
 from prometra.compare.models import CompareResult
+
 
 class CompareRenderer:
     """Renderer for displaying visual session comparison in terminal."""
 
-    def __init__(self, console: Optional[Console] = None):
+    def __init__(self, console: Console | None = None):
         self.console = console or Console()
 
     def render(self, result: CompareResult) -> None:
@@ -68,7 +70,11 @@ class CompareRenderer:
             self.console.print(dur_str)
 
         # Files diff
-        tot_files_diff = result.files_modified_difference + result.files_created_difference - result.files_deleted_difference
+        tot_files_diff = (
+            result.files_modified_difference
+            + result.files_created_difference
+            - result.files_deleted_difference
+        )
         file_sign = "+" if tot_files_diff >= 0 else ""
         file_str = f"{file_sign}{tot_files_diff} files"
         if tot_files_diff > 0:

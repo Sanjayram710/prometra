@@ -1,7 +1,11 @@
 import typer
+
 from prometra.cli import commands
 
-app = typer.Typer(help="Prometra - The Intelligence Layer for AI-Assisted Software Development", add_completion=False)
+app = typer.Typer(
+    help="Prometra - The Intelligence Layer for AI-Assisted Software Development",
+    add_completion=False,
+)
 
 app.command(name="init")(commands.init)
 app.command(name="start")(commands.start)
@@ -26,11 +30,14 @@ app.command(name="checkpoint")(commands.checkpoint)
 app.command(name="checkpoints")(commands.checkpoints)
 app.command(name="restore")(commands.restore)
 app.command(name="compare-checkpoints")(commands.compare_checkpoints)
+app.command(name="vibe")(commands.vibe)
 
 from prometra.cli.connectors_cmd import app as connectors_app
+
 app.add_typer(connectors_app, name="connectors")
 
 from prometra.cli.plugins_cmd import app as plugins_app
+
 app.add_typer(plugins_app, name="plugins")
 
 if __name__ == "__main__":

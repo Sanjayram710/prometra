@@ -1,7 +1,12 @@
-from typing import Callable, Dict, List, Type, Any
-from pydantic import BaseModel
+import contextlib
 import threading
+from collections.abc import Callable
+from typing import Any
+
+from pydantic import BaseModel
+
 from prometra.core.time import utcnow
+
 
 class BaseEvent(BaseModel):
     event_type: str
@@ -45,7 +50,7 @@ class AnalysisCompleted(BaseEvent):
 class ReportGenerated(BaseEvent):
     event_type: str = "ReportGenerated"
     project_id: str
-    formats: List[str]
+    formats: list[str]
 
 class ConnectorConnected(BaseEvent):
     event_type: str = "ConnectorConnected"
@@ -62,8 +67,8 @@ class ContextBuilt(BaseEvent):
 class EventBus:
     """Publish/Subscribe Event Bus"""
     def __init__(self):
-        self._subscribers: Dict[str, List[Callable[[BaseEvent], None]]] = {}
-        self._generic_subscribers: List[Callable[[BaseEvent], None]] = []
+        self._subscribers: dict[str, list[Callable[[BaseEvent], None]]] = {}
+        self._generic_subscribers: list[Callable[[BaseEvent], None]] = []
         self._lock = threading.Lock()
 
     def subscribe(self, event_class_or_type: Any, callback: Callable[[BaseEvent], None]):
@@ -88,8 +93,6 @@ class EventBus:
             generics = self._generic_subscribers.copy()
             
         for callback in subs + generics:
-            try:
+            with contextlib.suppress(Exception):
                 callback(event)
-            except Exception:
-                pass
 

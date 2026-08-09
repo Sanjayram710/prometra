@@ -1,6 +1,5 @@
-from typing import Dict, Any
 
-THEMES: Dict[str, Dict[str, str]] = {
+THEMES: dict[str, dict[str, str]] = {
     "cyan": {
         "primary": "#00E5FF",
         "secondary": "#00B0FF",
@@ -52,22 +51,27 @@ THEMES: Dict[str, Dict[str, str]] = {
         "success": "#00FF00",
         "warning": "#FFFF00",
         "error": "#FF0000",
-    }
+    },
 }
+
 
 class ThemeManager:
     """Manages color themes for the Prometra TUI application."""
 
     def __init__(self, default_theme: str = "cyan"):
         self.theme_names = list(THEMES.keys())
-        self.current_index = self.theme_names.index(default_theme) if default_theme in self.theme_names else 0
+        self.current_index = (
+            self.theme_names.index(default_theme)
+            if default_theme in self.theme_names
+            else 0
+        )
 
     @property
     def current_theme_name(self) -> str:
         return self.theme_names[self.current_index]
 
     @property
-    def current_theme(self) -> Dict[str, str]:
+    def current_theme(self) -> dict[str, str]:
         return THEMES[self.current_theme_name]
 
     def cycle_theme(self) -> str:

@@ -1,17 +1,19 @@
+import contextlib
 import os
-import shutil
-from typing import Optional, List, Dict, Any, Tuple
 
-from prometra.timemachine.models import RestorePreview, CheckpointModel
+from prometra.timemachine.models import RestorePreview
 from prometra.timemachine.storage import CheckpointStorage
 from prometra.tracker.ignore import IgnoreManager
+
 
 class RestoreEngine:
     """Provides pre-restore preview of affected files and safe restoration of project state."""
 
-    def __init__(self, root_dir: Optional[str] = None):
+    def __init__(self, root_dir: str | None = None):
         self.root_dir = root_dir or os.path.abspath(".")
-        self.cp_storage = CheckpointStorage(root_dir=os.path.join(self.root_dir, ".prometra"))
+        self.cp_storage = CheckpointStorage(
+            root_dir=os.path.join(self.root_dir, ".prometra")
+        )
         self.ignore = IgnoreManager(self.root_dir)
 
     def preview_restore(self, checkpoint_id: str) -> RestorePreview:
@@ -23,9 +25,14 @@ class RestoreEngine:
         target_hashes = checkpoint.file_hashes or {}
 
         # Scan current workspace files
-        current_hashes: Dict[str, str] = {}
+        current_hashes: dict[str, str] = {}
         for root, _, files in os.walk(self.root_dir):
-            if ".prometra" in root or ".git" in root or "venv" in root or "__pycache__" in root:
+            if (
+                ".prometra" in root
+                or ".git" in root
+                or "venv" in root
+                or "__pycache__" in root
+            ):
                 continue
 
             for file in files:
@@ -35,21 +42,21 @@ class RestoreEngine:
                 if self.ignore.should_ignore(rel_path):
                     continue
 
-                try:
+                with contextlib.suppress(OSError, UnicodeDecodeError):
                     with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
                         content = f.read()
-                    current_hashes[rel_path] = CheckpointStorage.compute_file_hash(content)
-                except Exception:
-                    pass
+                    current_hashes[rel_path] = CheckpointStorage.compute_file_hash(
+                        content
+                    )
 
-        files_created: List[str] = []
-        files_modified: List[str] = []
-        files_deleted: List[str] = []
-        unchanged_files: List[str] = []
+        files_created: list[str] = []
+        files_modified: list[str] = []
+        files_deleted: list[str] = []
+        unchanged_files: list[str] = []
 
         all_paths = set(target_hashes.keys()).union(set(current_hashes.keys()))
 
-        for path in sorted(list(all_paths)):
+        for path in sorted(all_paths):
             in_target = path in target_hashes
             in_current = path in current_hashes
 
@@ -67,7 +74,7 @@ class RestoreEngine:
             files_created=files_created,
             files_modified=files_modified,
             files_deleted=files_deleted,
-            unchanged_files=unchanged_files
+            unchanged_files=unchanged_files,
         )
 
     def execute_restore(self, checkpoint_id: str) -> bool:
@@ -87,9 +94,7 @@ class RestoreEngine:
         for rel_path in preview.files_deleted:
             abs_dest = os.path.join(self.root_dir, rel_path)
             if os.path.exists(abs_dest) and os.path.isfile(abs_dest):
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(abs_dest)
-                except Exception:
-                    pass
 
         return True

@@ -1,8 +1,14 @@
 import os
-from typing import List, Dict, Any, Tuple, Optional
-from prometra.intelligence.models import SessionSummary, AiUsageStats
+
+from prometra.intelligence.models import AiUsageStats, SessionSummary
+from prometra.storage.models import (
+    AiEventModel,
+    FilesystemEventModel,
+    GitEventModel,
+    SessionModel,
+    TimelineEventModel,
+)
 from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, AiEventModel, GitEventModel, SessionModel
 
 EXT_TO_LANG = {
     "py": "Python",
@@ -22,28 +28,41 @@ EXT_TO_LANG = {
     "sql": "SQL",
 }
 
+
 class SummaryBuilder:
     """Extracts session events from SQLite database and builds structured SessionSummary and AiUsageStats."""
 
     def __init__(self, storage: SQLiteStorage):
         self.storage = storage
 
-    def build_summary(self, session_id: Optional[str] = None) -> Tuple[SessionSummary, AiUsageStats, List[str], List[str], List[str]]:
+    def build_summary(
+        self, session_id: str | None = None
+    ) -> tuple[SessionSummary, AiUsageStats, list[str], list[str], list[str]]:
         db = self.storage.get_session()
         try:
             # 1. Resolve session
             sess_rec = None
             if session_id:
-                sess_rec = db.query(SessionModel).filter_by(session_id=session_id).first()
+                sess_rec = (
+                    db.query(SessionModel).filter_by(session_id=session_id).first()
+                )
             if not sess_rec:
-                sess_rec = db.query(SessionModel).order_by(SessionModel.start_ts.desc()).first()
+                sess_rec = (
+                    db.query(SessionModel)
+                    .order_by(SessionModel.start_ts.desc())
+                    .first()
+                )
 
-            target_session_id = sess_rec.session_id if sess_rec else (session_id or "default")
+            target_session_id = (
+                sess_rec.session_id if sess_rec else (session_id or "default")
+            )
 
             # 2. Query timeline events
             tl_query = db.query(TimelineEventModel)
             if target_session_id:
-                tl_query = tl_query.filter(TimelineEventModel.session_id == target_session_id)
+                tl_query = tl_query.filter(
+                    TimelineEventModel.session_id == target_session_id
+                )
             tl_events = tl_query.all()
 
             total_events = len(tl_events)
@@ -66,7 +85,9 @@ class SummaryBuilder:
             # 3. Query Filesystem events
             fs_query = db.query(FilesystemEventModel)
             if target_session_id:
-                fs_query = fs_query.filter(FilesystemEventModel.session_id == target_session_id)
+                fs_query = fs_query.filter(
+                    FilesystemEventModel.session_id == target_session_id
+                )
             fs_events = fs_query.all()
 
             files_created = sum(1 for f in fs_events if f.operation == "created")
@@ -74,9 +95,9 @@ class SummaryBuilder:
             files_deleted = sum(1 for f in fs_events if f.operation == "deleted")
 
             # File path frequencies and languages
-            file_counts: Dict[str, int] = {}
+            file_counts: dict[str, int] = {}
             lang_set = set()
-            file_paths: List[str] = []
+            file_paths: list[str] = []
 
             for f in fs_events:
                 path = f.normalized_relative_path or f.path
@@ -89,7 +110,9 @@ class SummaryBuilder:
 
             top_files = [
                 {"path": path, "count": count}
-                for path, count in sorted(file_counts.items(), key=lambda x: x[1], reverse=True)[:5]
+                for path, count in sorted(
+                    file_counts.items(), key=lambda x: x[1], reverse=True
+                )[:5]
             ]
 
             # 4. Query Git events
@@ -104,8 +127,16 @@ class SummaryBuilder:
                 ai_query = ai_query.filter(AiEventModel.session_id == target_session_id)
             ai_records = ai_query.all()
 
-            ai_prompts = sum(1 for a in ai_records if a.event_type in ("UserPrompt", "Prompt", "ai_prompt"))
-            ai_tools = sum(1 for a in ai_records if a.event_type in ("ToolCall", "ToolResponse", "FileEdit"))
+            ai_prompts = sum(
+                1
+                for a in ai_records
+                if a.event_type in ("UserPrompt", "Prompt", "ai_prompt")
+            )
+            ai_tools = sum(
+                1
+                for a in ai_records
+                if a.event_type in ("ToolCall", "ToolResponse", "FileEdit")
+            )
             prompts_text = [a.description for a in ai_records if a.description]
 
             # Calculate AI usage stats
@@ -119,7 +150,9 @@ class SummaryBuilder:
                 estimated_tokens=est_tokens,
                 estimated_cost=est_cost,
                 most_used_model="claude-3-5-sonnet",
-                response_frequency_min=round(total_prompts / max(duration_minutes, 1.0), 2)
+                response_frequency_min=round(
+                    total_prompts / max(duration_minutes, 1.0), 2
+                ),
             )
 
             # Coding intensity
@@ -138,7 +171,9 @@ class SummaryBuilder:
                 first_ts = tl_events[0].timestamp
                 if first_ts:
                     start_str = first_ts.strftime("%H:00")
-                    end_str = (first_ts.replace(hour=(first_ts.hour + 1) % 24)).strftime("%H:00")
+                    end_str = (
+                        first_ts.replace(hour=(first_ts.hour + 1) % 24)
+                    ).strftime("%H:00")
                     most_active = f"{start_str} - {end_str}"
                 else:
                     most_active = "14:00 - 15:00"
@@ -157,8 +192,8 @@ class SummaryBuilder:
                 ai_prompts=total_prompts,
                 most_active_period=most_active,
                 top_edited_files=top_files,
-                languages=sorted(list(lang_set)) if lang_set else ["Python"],
-                coding_intensity=intensity
+                languages=sorted(lang_set) if lang_set else ["Python"],
+                coding_intensity=intensity,
             )
 
             return summary, ai_usage, commit_messages, prompts_text, file_paths

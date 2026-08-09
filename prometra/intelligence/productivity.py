@@ -1,5 +1,5 @@
-from typing import List, Dict, Any
 from prometra.intelligence.models import SessionClassification
+
 
 class SessionClassifier:
     """Classifies development sessions based on file operations, git messages, and AI prompt intent."""
@@ -8,11 +8,11 @@ class SessionClassifier:
     def classify_session(
         files_created: int,
         files_modified: int,
-        commit_messages: List[str],
-        prompts: List[str],
-        file_paths: List[str]
+        commit_messages: list[str],
+        prompts: list[str],
+        file_paths: list[str],
     ) -> SessionClassification:
-        scores: Dict[str, float] = {
+        scores: dict[str, float] = {
             "Feature Development": 0.0,
             "Bug Fix": 0.0,
             "Refactoring": 0.0,
@@ -23,20 +23,33 @@ class SessionClassifier:
         }
 
         all_text = " ".join(commit_messages + prompts).lower()
-        all_paths = " ".join(file_paths).lower()
 
         # Check keyword intent
-        if any(w in all_text for w in ("feat", "add", "implement", "build", "create", "new")):
+        if any(
+            w in all_text
+            for w in ("feat", "add", "implement", "build", "create", "new")
+        ):
             scores["Feature Development"] += 3.0
-        if any(w in all_text for w in ("fix", "bug", "issue", "resolve", "patch", "error", "exception")):
+        if any(
+            w in all_text
+            for w in ("fix", "bug", "issue", "resolve", "patch", "error", "exception")
+        ):
             scores["Bug Fix"] += 3.0
-        if any(w in all_text for w in ("refactor", "clean", "structure", "move", "rename", "format")):
+        if any(
+            w in all_text
+            for w in ("refactor", "clean", "structure", "move", "rename", "format")
+        ):
             scores["Refactoring"] += 3.0
-        if any(w in all_text for w in ("doc", "readme", "comment", "docs", "changelog")):
+        if any(
+            w in all_text for w in ("doc", "readme", "comment", "docs", "changelog")
+        ):
             scores["Documentation"] += 3.0
         if any(w in all_text for w in ("test", "pytest", "mock", "spec", "coverage")):
             scores["Testing"] += 3.0
-        if any(w in all_text for w in ("why", "how", "search", "explain", "investigate", "explore")):
+        if any(
+            w in all_text
+            for w in ("why", "how", "search", "explain", "investigate", "explore")
+        ):
             scores["Research"] += 2.0
 
         # Check structural file indicators
@@ -64,10 +77,14 @@ class SessionClassifier:
             confidence = min(0.98, round(0.5 + (max_score / 10.0), 2))
 
         # Secondary categories with score >= 2.0
-        secondaries = [cat for cat, s in sorted(scores.items(), key=lambda x: x[1], reverse=True) if cat != primary and s >= 2.0]
+        secondaries = [
+            cat
+            for cat, s in sorted(scores.items(), key=lambda x: x[1], reverse=True)
+            if cat != primary and s >= 2.0
+        ]
 
         return SessionClassification(
             primary_category=primary,
             confidence=confidence,
-            secondary_categories=secondaries
+            secondary_categories=secondaries,
         )

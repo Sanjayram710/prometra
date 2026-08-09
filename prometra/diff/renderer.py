@@ -1,17 +1,19 @@
-from typing import Optional
+
 from rich.console import Console
+
 from prometra.diff.models import DiffResult
+
 
 class DiffRenderer:
     """Renderer for displaying visual diff output in terminal."""
 
-    def __init__(self, console: Optional[Console] = None):
+    def __init__(self, console: Console | None = None):
         self.console = console or Console()
 
     def render(self, result: DiffResult) -> None:
         """Render formatted terminal output for DiffResult."""
         divider = "-" * 48
-        
+
         self.console.print(divider)
         self.console.print("[bold]File[/bold]")
         self.console.print(result.file)
@@ -23,11 +25,13 @@ class DiffRenderer:
         self.console.print()
 
         if not result.diff.strip():
-            self.console.print("[yellow]No diff available (files are identical).[/yellow]")
+            self.console.print(
+                "[yellow]No diff available (files are identical).[/yellow]"
+            )
         else:
             diff_lines = result.diff.splitlines()
             for line in diff_lines:
-                if line.startswith("---") or line.startswith("+++"):
+                if line.startswith(("---", "+++")):
                     self.console.print(f"[bold cyan]{line}[/bold cyan]")
                 elif line.startswith("@@"):
                     self.console.print(f"[cyan]{line}[/cyan]")
