@@ -1046,27 +1046,7 @@ def vibe(
         )
     )
 
-    prompts_to_run = []
-    if prompt:
-        prompts_to_run.append(prompt)
-
-    if interactive or not prompt:
-        console.print("[dim]Entering interactive vibe mode. Type 'exit' or 'quit' to end session.[/dim]")
-        while True:
-            try:
-                user_input = typer.prompt("vibe")
-                if user_input.strip().lower() in ["exit", "quit"]:
-                    console.print("[yellow]Exiting Vibe Coding session.[/yellow]")
-                    break
-                if user_input.strip():
-                    prompts_to_run.append(user_input.strip())
-                    if not interactive:
-                        break
-            except (KeyboardInterrupt, EOFError):
-                console.print("\n[yellow]Session terminated.[/yellow]")
-                break
-
-    for p in prompts_to_run:
+    def _execute_vibe_prompt(p: str):
         console.print(f"\n[bold cyan]🚀 Executing Prompt:[/bold cyan] {p}")
         with console.status("[bold green]Generating response & tracking changes...[/bold green]"):
             result = vibe_engine.run_vibe_prompt(
@@ -1122,4 +1102,24 @@ def vibe(
         console.print(
             f"[bold green]✓ Event & File Diffs Persisted to Timeline DB![/bold green] (Session ID: [cyan]{result['session_id']}[/cyan])\n"
         )
+
+    if prompt:
+        _execute_vibe_prompt(prompt)
+
+    if interactive or not prompt:
+        console.print("[dim]Entering interactive vibe mode. Type 'exit' or 'quit' to end session.[/dim]")
+        while True:
+            try:
+                user_input = typer.prompt("vibe")
+                clean_input = user_input.strip()
+                if clean_input.lower() in ["exit", "quit"]:
+                    console.print("[yellow]Exiting Vibe Coding session.[/yellow]")
+                    break
+                if clean_input.lower().startswith("vibe:"):
+                    clean_input = clean_input[5:].strip()
+                if clean_input:
+                    _execute_vibe_prompt(clean_input)
+            except (KeyboardInterrupt, EOFError):
+                console.print("\n[yellow]Session terminated.[/yellow]")
+                break
 
