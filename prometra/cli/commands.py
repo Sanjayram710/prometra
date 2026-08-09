@@ -202,7 +202,7 @@ def status():
                 .count()
             )
             git_count = (
-                db.query(GitEventModel).filter_by(session_id=active.session_id).count()
+                db.query(GitEventModel).filter_by(session_relation=active.session_id).count()
             )
             console.print(f"Files tracked in session: {fs_count}")
             console.print(f"Git events in session: {git_count}")
@@ -593,7 +593,9 @@ def export():
 
 
 def diff(
-    file_path: str = typer.Argument(..., help="Path to the file to diff"),
+    file_path: str | None = typer.Argument(
+        None, help="Path to specific file to diff (omit to diff all tracked files in project)"
+    ),
     session: str | None = typer.Option(
         None, "--session", help="Filter by session ID"
     ),
@@ -608,31 +610,50 @@ def diff(
         3, "--context", help="Number of context lines for diff"
     ),
 ):
-    """Inspect changes between tracked file versions."""
+    """Inspect changes between tracked file versions (diffs all project files if no file path specified)."""
     storage = get_storage()
     from prometra.diff.engine import DiffEngine
     from prometra.diff.formatter import DiffFormatter
     from prometra.diff.renderer import DiffRenderer
+    from prometra.storage.models import FilesystemEventModel
 
     engine = DiffEngine(storage)
     try:
-        result = engine.compute_diff(
-            file_path=file_path,
-            session_id=session,
-            from_event=from_event,
-            to_event=to_event,
-            latest=latest,
-            context=context,
-        )
-        if json_out:
-            console.print(DiffFormatter.to_json(result))
-            return
-        if markdown_out:
-            console.print(DiffFormatter.to_markdown(result))
+        target_files = []
+        if file_path:
+            target_files = [file_path]
+        else:
+            db = storage.get_session()
+            q = db.query(FilesystemEventModel.normalized_relative_path).distinct()
+            if session:
+                q = q.filter(FilesystemEventModel.session_id == session)
+            target_files = [r[0] for r in q.all() if r[0]]
+            db.close()
+
+        if not target_files:
+            console.print("[yellow]No tracked file changes found in project.[/yellow]")
             return
 
-        renderer = DiffRenderer(console)
-        renderer.render(result)
+        for target in target_files:
+            try:
+                result = engine.compute_diff(
+                    file_path=target,
+                    session_id=session,
+                    from_event=from_event,
+                    to_event=to_event,
+                    latest=latest,
+                    context=context,
+                )
+                if json_out:
+                    console.print(DiffFormatter.to_json(result))
+                elif markdown_out:
+                    console.print(DiffFormatter.to_markdown(result))
+                else:
+                    renderer = DiffRenderer(console)
+                    renderer.render(result)
+            except Exception as file_err:
+                console.print(f"[dim]Skipping diff for {target}: {file_err}[/dim]")
+
     except Exception as e:  # noqa: BLE001
         console.print(f"[red]Error:[/red] {e!s}")
 

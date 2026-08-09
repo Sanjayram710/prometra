@@ -26,6 +26,18 @@ class ConnectorRegistry:
             from prometra.connectors.gpt import GPTConnector
             self._connectors["gpt"] = GPTConnector
 
+        with contextlib.suppress(Exception):
+            from prometra.connectors.mcp import MCPConnector
+            self._connectors["mcp"] = MCPConnector
+
+        with contextlib.suppress(Exception):
+            from prometra.connectors.antigravity import AntigravityConnector
+            self._connectors["antigravity"] = AntigravityConnector
+
+        with contextlib.suppress(Exception):
+            from prometra.connectors.codex import CodexConnector
+            self._connectors["codex"] = CodexConnector
+
     def register(self, name: str, connector_class: type[BaseConnector]) -> None:
         """Manually register a connector class."""
         if name in self._connectors:

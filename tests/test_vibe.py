@@ -57,6 +57,48 @@ def test_gpt_connector():
         conn.generate("Prompt", trigger_limit=True)
 
 
+def test_mcp_connector():
+    from prometra.connectors.mcp.connector import MCPConnector, MCPQuotaExceededError
+    conn = MCPConnector()
+    conn.connect()
+    assert conn.health().state == "connected"
+
+    res = conn.generate("Create helper in mcp_test.py")
+    assert res["provider"] == "mcp"
+    assert "mcp" in res["model"]
+
+    with pytest.raises(MCPQuotaExceededError):
+        conn.generate("Prompt", trigger_limit=True)
+
+
+def test_antigravity_connector():
+    from prometra.connectors.antigravity.connector import AntigravityConnector, AntigravityQuotaExceededError
+    conn = AntigravityConnector()
+    conn.connect()
+    assert conn.health().state == "connected"
+
+    res = conn.generate("Create helper in ag_test.py")
+    assert res["provider"] == "antigravity"
+    assert "antigravity" in res["model"]
+
+    with pytest.raises(AntigravityQuotaExceededError):
+        conn.generate("Prompt", trigger_limit=True)
+
+
+def test_codex_connector():
+    from prometra.connectors.codex.connector import CodexConnector, CodexQuotaExceededError
+    conn = CodexConnector()
+    conn.connect()
+    assert conn.health().state == "connected"
+
+    res = conn.generate("Create helper in codex_test.py")
+    assert res["provider"] == "codex"
+    assert "codex" in res["model"]
+
+    with pytest.raises(CodexQuotaExceededError):
+        conn.generate("Prompt", trigger_limit=True)
+
+
 def test_model_orchestrator_primary_success():
     bus = EventBus()
     orchestrator = ModelOrchestrator(event_bus=bus)
