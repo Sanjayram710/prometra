@@ -47,7 +47,8 @@ class PromptSubmitted(AiEvent):
     def get_description(self) -> str:
         text = self.content or (self.prompt.content if self.prompt else "")
         truncated = f'"{text[:60]}..."' if len(text) > 60 else f'"{text}"'
-        return f"Prompt Submitted: {truncated}"
+        model_tag = f" [{self.model_name}]" if self.model_name else ""
+        return f"Prompt Submitted{model_tag}: {truncated}"
 
 
 class PromptUpdated(AiEvent):
@@ -77,7 +78,9 @@ class ResponseReceived(AiEvent):
             if len(self.content) > 60
             else f'"{self.content}"'
         )
-        return f"Response Received: {truncated}"
+        m = self.model or self.model_name
+        model_tag = f" [{m}]" if m else ""
+        return f"Response Received{model_tag}: {truncated}"
 
 
 class ResponseCompleted(AiEvent):

@@ -54,6 +54,10 @@ class ModelOrchestrator:
         fallback_events = []
         last_error = None
 
+        primary_connector = self._get_connector(primary_model)
+        primary_meta = primary_connector.metadata()
+        default_model = getattr(primary_meta, "default_model", primary_model)
+
         # Emit PromptSubmitted event
         prompt_id = f"prompt-{uuid.uuid4().hex[:8]}"
         if self.event_bus:
@@ -64,7 +68,7 @@ class ModelOrchestrator:
                     content=prompt,
                     prompt=PromptData(prompt_id=prompt_id, content=prompt),
                     connector_name=primary_model,
-                    model_name=primary_model,
+                    model_name=default_model,
                 )
             )
 
@@ -255,7 +259,7 @@ class VibeEngine:
         }
 
     def record_diff_events(
-        self, session_id: str, diff_summary: dict[str, Any], provider: str
+        self, session_id: str, diff_summary: dict[str, Any], provider: str, model_name: str = ""
     ) -> None:
         """Persist filesystem diff events to SQLite DB."""
         db = self.storage.get_session()
@@ -274,6 +278,8 @@ class VibeEngine:
                 + [("modify", m) for m in diff_summary["modified"]]
                 + [("delete", d) for d in diff_summary["deleted"]]
             )
+
+            actor_tool_label = f"vibe-{provider}/{model_name}" if model_name else f"vibe-{provider}"
 
             for event_type, change in all_changes:
                 file_rel = change["file"]
@@ -296,10 +302,10 @@ class VibeEngine:
                     timestamp=timestamp,
                     sequence=max_seq,
                     source=f"vibe-{provider}",
-                    actor_tool=f"vibe-{provider}",
+                    actor_tool=actor_tool_label,
                     session_id=session_id,
                     related_event_ids=[event_id],
-                    summary=f"Vibe Code {event_type.capitalize()}: {file_rel} (+{change['additions']}/-{change['deletions']})",
+                    summary=f"Vibe Code {event_type.capitalize()}: {file_rel} (+{change['additions']}/-{change['deletions']}) [{model_name or provider}]",
                 )
                 db.add(tl_event)
 
@@ -432,7 +438,12 @@ class VibeEngine:
 
         # 5. Record diff events in SQLite DB
         if diff_summary["total_files_changed"] > 0:
-            self.record_diff_events(session_id, diff_summary, model_res.get("provider", "ai"))
+            self.record_diff_events(
+                session_id,
+                diff_summary,
+                model_res.get("provider", "ai"),
+                model_name=model_res.get("model", ""),
+            )
 
         return {
             "session_id": session_id,

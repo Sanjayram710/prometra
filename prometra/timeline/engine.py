@@ -77,13 +77,19 @@ class TimelineEngine:
             )
             db.add(ai_db_record)
 
+            actor_tool_name = (
+                f"{ai_event.connector_name}/{ai_event.model_name}"
+                if ai_event.model_name and ai_event.model_name != ai_event.connector_name
+                else ai_event.connector_name
+            )
+
             # Save in unified TimelineEventModel
             tl_event = TimelineEventModel(
                 normalized_event_type=ai_event.event_type,
                 timestamp=ts,
                 sequence=max_seq + 1,
                 source=ai_event.connector_name,
-                actor_tool=ai_event.connector_name,
+                actor_tool=actor_tool_name,
                 session_id=ai_event.session_id,
                 related_event_ids=[specific_event_id],
                 summary=desc,
