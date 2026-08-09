@@ -1,6 +1,8 @@
 import os
-from prometra.compare.models import CompareResult
+
 from prometra.compare.formatter import CompareFormatter
+from prometra.compare.models import CompareResult
+
 
 class CompareExporter:
     """Exporter for saving or outputting CompareResult in various formats."""
@@ -16,7 +18,9 @@ class CompareExporter:
         return CompareFormatter.to_markdown(result)
 
     @staticmethod
-    def export_to_file(result: CompareResult, export_path: str, format_override: str = None) -> str:
+    def export_to_file(
+        result: CompareResult, export_path: str, format_override: str | None = None
+    ) -> str:
         """Save comparison output to specified file path."""
         # Determine format from extension if not specified
         ext = os.path.splitext(export_path)[1].lower()

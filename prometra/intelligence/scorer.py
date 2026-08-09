@@ -1,5 +1,5 @@
-from typing import Dict, Any
 from prometra.intelligence.models import ProductivityScore
+
 
 class ProductivityScorer:
     """Calculates a normalized 0–100 productivity score and star rating for a session."""
@@ -11,7 +11,7 @@ class ProductivityScorer:
         files_modified: int,
         commits: int,
         ai_prompts: int,
-        context_switches: int = 0
+        context_switches: int = 0,
     ) -> ProductivityScore:
         # 1. Focus Time Score (max 25 pts)
         if 20 <= duration_minutes <= 180:
@@ -49,7 +49,9 @@ class ProductivityScorer:
         else:
             completion_score = 5
 
-        total = focus_score + commit_score + ai_score + consistency_score + completion_score
+        total = (
+            focus_score + commit_score + ai_score + consistency_score + completion_score
+        )
         final_score = max(0, min(100, total))
 
         # Star calculation (0-100 -> 0-5 stars)
@@ -70,5 +72,5 @@ class ProductivityScorer:
                 "ai_synergy": f"{ai_score}/20",
                 "consistency": f"{consistency_score}/15",
                 "completion": f"{completion_score}/15",
-            }
+            },
         )

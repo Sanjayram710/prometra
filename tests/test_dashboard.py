@@ -1,18 +1,26 @@
-import pytest
+import datetime
 import os
 import tempfile
-import datetime
+
+import pytest
 from typer.testing import CliRunner
+
 from prometra.cli.main import app
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, SessionModel, FilesystemEventModel, GitEventModel, AiEventModel
-from prometra.timeline.engine import TimelineEngine
-from prometra.dashboard.engine import DashboardEngine
-from prometra.dashboard.formatter import DashboardFormatter
-from prometra.dashboard.exporter import DashboardExporter
 from prometra.core.time import utcnow
+from prometra.dashboard.engine import DashboardEngine
+from prometra.dashboard.exporter import DashboardExporter
+from prometra.dashboard.formatter import DashboardFormatter
+from prometra.storage.models import (
+    AiEventModel,
+    FilesystemEventModel,
+    GitEventModel,
+    SessionModel,
+    TimelineEventModel,
+)
+from prometra.storage.sqlite import SQLiteStorage
 
 runner = CliRunner()
+
 
 @pytest.fixture
 def temp_db():
@@ -23,6 +31,7 @@ def temp_db():
             yield storage
         finally:
             storage.engine.dispose()
+
 
 @pytest.fixture
 def populated_dashboard_db(temp_db):
@@ -38,7 +47,7 @@ def populated_dashboard_db(temp_db):
         duration_seconds=7200,
         project_path="/app",
         working_directory="/app",
-        status="completed"
+        status="completed",
     )
     # Create Session 2 (5 days ago)
     s2 = SessionModel(
@@ -49,7 +58,7 @@ def populated_dashboard_db(temp_db):
         duration_seconds=3600,
         project_path="/app",
         working_directory="/app",
-        status="completed"
+        status="completed",
     )
     db.add(s1)
     db.add(s2)
@@ -63,7 +72,7 @@ def populated_dashboard_db(temp_db):
         path="backend/auth.py",
         normalized_relative_path="backend/auth.py",
         operation="modified",
-        source="filesystem"
+        source="filesystem",
     )
     f2 = FilesystemEventModel(
         event_id="fs-2",
@@ -73,7 +82,7 @@ def populated_dashboard_db(temp_db):
         path="backend/auth.py",
         normalized_relative_path="backend/auth.py",
         operation="modified",
-        source="filesystem"
+        source="filesystem",
     )
     f3 = FilesystemEventModel(
         event_id="fs-3",
@@ -83,7 +92,7 @@ def populated_dashboard_db(temp_db):
         path="frontend/login.tsx",
         normalized_relative_path="frontend/login.tsx",
         operation="created",
-        source="filesystem"
+        source="filesystem",
     )
     db.add_all([f1, f2, f3])
 
@@ -94,7 +103,7 @@ def populated_dashboard_db(temp_db):
         branch="main",
         commit_id="c111",
         timestamp=now - datetime.timedelta(hours=1),
-        source="git"
+        source="git",
     )
     db.add(g1)
 
@@ -107,9 +116,13 @@ def populated_dashboard_db(temp_db):
         connector="claude",
         model_name="claude-3-5-sonnet",
         prompt_id="p1",
-        token_usage={"prompt_tokens": 100, "completion_tokens": 50, "total_tokens": 150},
+        token_usage={
+            "prompt_tokens": 100,
+            "completion_tokens": 50,
+            "total_tokens": 150,
+        },
         cost=0.005,
-        description="Prompt Submitted: auth"
+        description="Prompt Submitted: auth",
     )
     ai2 = AiEventModel(
         event_id="ai-2",
@@ -118,9 +131,13 @@ def populated_dashboard_db(temp_db):
         event_type="ResponseReceived",
         connector="claude",
         model_name="claude-3-5-sonnet",
-        token_usage={"prompt_tokens": 200, "completion_tokens": 300, "total_tokens": 500},
+        token_usage={
+            "prompt_tokens": 200,
+            "completion_tokens": 300,
+            "total_tokens": 500,
+        },
         cost=0.010,
-        description="Response Received"
+        description="Response Received",
     )
     db.add_all([ai1, ai2])
 
@@ -132,7 +149,7 @@ def populated_dashboard_db(temp_db):
         source="claude",
         actor_tool="claude",
         session_id="sess-dash-1",
-        summary="Prompt Submitted"
+        summary="Prompt Submitted",
     )
     db.add(tl1)
 
@@ -140,6 +157,7 @@ def populated_dashboard_db(temp_db):
     db.close()
 
     return temp_db
+
 
 def test_dashboard_engine_all_time(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
@@ -162,13 +180,15 @@ def test_dashboard_engine_all_time(populated_dashboard_db):
     assert metrics.ai.estimated_cost == 0.015
     assert metrics.ai.top_models[0].model_name == "claude-3-5-sonnet"
 
+
 def test_dashboard_engine_today_filter(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
     metrics_today = engine.compute_metrics(today=True)
 
     assert metrics_today.filter_label == "Today"
     assert metrics_today.sessions.total_sessions == 1
-    assert metrics_today.filesystem.files_created == 0 # created file was 5 days ago
+    assert metrics_today.filesystem.files_created == 0  # created file was 5 days ago
+
 
 def test_dashboard_engine_week_filter(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
@@ -177,6 +197,7 @@ def test_dashboard_engine_week_filter(populated_dashboard_db):
     assert metrics_week.filter_label == "Past 7 Days"
     assert metrics_week.sessions.total_sessions == 2
 
+
 def test_dashboard_engine_session_filter(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
     metrics_sess = engine.compute_metrics(session_id="sess-dash-1")
@@ -184,6 +205,7 @@ def test_dashboard_engine_session_filter(populated_dashboard_db):
     assert metrics_sess.filter_label == "Session #sess-dash-1"
     assert metrics_sess.sessions.total_sessions == 1
     assert metrics_sess.sessions.total_duration_seconds == 7200
+
 
 def test_dashboard_formatter(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
@@ -197,6 +219,7 @@ def test_dashboard_formatter(populated_dashboard_db):
     assert "# Prometra Analytics Dashboard" in md_out
     assert "backend/auth.py" in md_out
     assert "claude-3-5-sonnet" in md_out
+
 
 def test_dashboard_exporter(populated_dashboard_db):
     engine = DashboardEngine(populated_dashboard_db)
@@ -216,8 +239,11 @@ def test_dashboard_exporter(populated_dashboard_db):
         with open(json_file, "r", encoding="utf-8") as f:
             assert '"filter_label"' in f.read()
 
+
 def test_cli_dashboard_command(monkeypatch, populated_dashboard_db):
-    monkeypatch.setattr("prometra.cli.commands.get_storage", lambda: populated_dashboard_db)
+    monkeypatch.setattr(
+        "prometra.cli.commands.get_storage", lambda: populated_dashboard_db
+    )
 
     res = runner.invoke(app, ["dashboard"])
     assert res.exit_code == 0

@@ -1,15 +1,14 @@
-import json
 import csv
 import io
-from typing import Optional, Dict, Any
 
-from prometra.storage.sqlite import SQLiteStorage
 from prometra.intelligence.models import InsightsResult
-from prometra.intelligence.summaries import SummaryBuilder
-from prometra.intelligence.productivity import SessionClassifier
-from prometra.intelligence.scorer import ProductivityScorer
 from prometra.intelligence.patterns import PatternDetector
+from prometra.intelligence.productivity import SessionClassifier
 from prometra.intelligence.recommendations import RecommendationEngine
+from prometra.intelligence.scorer import ProductivityScorer
+from prometra.intelligence.summaries import SummaryBuilder
+from prometra.storage.sqlite import SQLiteStorage
+
 
 class IntelligenceAnalyzer:
     """Main analyzer engine coordinating session summary, classification, scoring, patterns, and recommendations."""
@@ -17,10 +16,12 @@ class IntelligenceAnalyzer:
     def __init__(self, storage: SQLiteStorage):
         self.storage = storage
 
-    def analyze_session(self, session_id: Optional[str] = None) -> InsightsResult:
+    def analyze_session(self, session_id: str | None = None) -> InsightsResult:
         """Run full session intelligence analysis."""
         summary_builder = SummaryBuilder(self.storage)
-        summary, ai_usage, commit_messages, prompts_text, file_paths = summary_builder.build_summary(session_id=session_id)
+        summary, ai_usage, commit_messages, prompts_text, file_paths = (
+            summary_builder.build_summary(session_id=session_id)
+        )
 
         # 1. Session Classification
         classification = SessionClassifier.classify_session(
@@ -28,7 +29,7 @@ class IntelligenceAnalyzer:
             files_modified=summary.files_modified,
             commit_messages=commit_messages,
             prompts=prompts_text,
-            file_paths=file_paths
+            file_paths=file_paths,
         )
 
         # 2. Context switch count heuristic
@@ -47,7 +48,7 @@ class IntelligenceAnalyzer:
             top_files=summary.top_edited_files,
             commit_messages=commit_messages,
             prompts=prompts_text,
-            context_switches=context_switches
+            context_switches=context_switches,
         )
 
         # 4. Productivity Scoring
@@ -56,8 +57,8 @@ class IntelligenceAnalyzer:
             total_events=summary.total_events,
             files_modified=summary.files_modified,
             commits=summary.git_commits,
-            ai_prompts=summary.ai_prompts,
-            context_switches=context_switches
+            ai_prompts=ai_usage.total_prompts,
+            context_switches=context_switches,
         )
 
         # 5. Recommendations
@@ -67,7 +68,7 @@ class IntelligenceAnalyzer:
             files_modified=summary.files_modified,
             commits=summary.git_commits,
             patterns=patterns,
-            top_files=summary.top_edited_files
+            top_files=summary.top_edited_files,
         )
 
         return InsightsResult(
@@ -76,7 +77,7 @@ class IntelligenceAnalyzer:
             productivity=productivity,
             ai_usage=ai_usage,
             patterns=patterns,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
     @staticmethod
@@ -93,13 +94,19 @@ class IntelligenceAnalyzer:
         ai = result.ai_usage
 
         md = []
-        md.append(f"# Prometra AI Session Intelligence Report")
-        md.append(f"**Session ID:** `{s.session_id}` | **Category:** `{c.primary_category}` | **Productivity Score:** `{p.score} / 100` ({p.stars})\n")
+        md.append("# Prometra AI Session Intelligence Report")
+        md.append(
+            f"**Session ID:** `{s.session_id}` | **Category:** `{c.primary_category}` | **Productivity Score:** `{p.score} / 100` ({p.stars})\n"
+        )
 
         md.append("## 📊 Session Overview Summary")
-        md.append(f"- **Duration:** {s.duration_minutes:.1f} mins ({s.duration_hours:.2f} hrs)")
+        md.append(
+            f"- **Duration:** {s.duration_minutes:.1f} mins ({s.duration_hours:.2f} hrs)"
+        )
         md.append(f"- **Total Events Recorded:** {s.total_events}")
-        md.append(f"- **Files Modified / Created / Deleted:** {s.files_modified} / {s.files_created} / {s.files_deleted}")
+        md.append(
+            f"- **Files Modified / Created / Deleted:** {s.files_modified} / {s.files_created} / {s.files_deleted}"
+        )
         md.append(f"- **Git Commits:** {s.git_commits}")
         md.append(f"- **AI Prompts Used:** {s.ai_prompts}")
         md.append(f"- **Languages Worked On:** {', '.join(s.languages)}")

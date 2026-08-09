@@ -1,9 +1,17 @@
-from typing import List, Dict, Any
-from prometra.ai.events import AiEvent, TokenUsage, LatencyMeasured, ErrorOccurred, ToolInvocation
+from typing import Any
+
+from prometra.ai.events import (
+    AiEvent,
+    ErrorOccurred,
+    LatencyMeasured,
+    TokenUsage,
+    ToolInvocation,
+)
+
 
 class AiMetricsAggregator:
     @staticmethod
-    def aggregate(events: List[AiEvent]) -> Dict[str, Any]:
+    def aggregate(events: list[AiEvent]) -> dict[str, Any]:
         total_prompt_tokens = 0
         total_completion_tokens = 0
         total_latency_ms = 0
@@ -25,12 +33,12 @@ class AiMetricsAggregator:
                 tool_counts[tool_name] = tool_counts.get(tool_name, 0) + 1
 
         avg_latency = (total_latency_ms / latency_count) if latency_count > 0 else 0
-        
+
         return {
             "total_prompt_tokens": total_prompt_tokens,
             "total_completion_tokens": total_completion_tokens,
             "total_tokens": total_prompt_tokens + total_completion_tokens,
             "average_latency_ms": avg_latency,
             "error_count": errors_count,
-            "tool_invocation_frequencies": tool_counts
+            "tool_invocation_frequencies": tool_counts,
         }

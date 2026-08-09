@@ -1,15 +1,17 @@
 import csv
-import json
 import io
+import json
 import os
-from typing import List, Dict, Any
+from typing import Any
+
 from prometra.storage.models import TimelineEventModel
+
 
 class TimelineFormatter:
     """Formats timeline events for export and output representations."""
 
     @staticmethod
-    def event_to_dict(e: TimelineEventModel) -> Dict[str, Any]:
+    def event_to_dict(e: TimelineEventModel) -> dict[str, Any]:
         return {
             "id": e.id,
             "timestamp": str(e.timestamp) if e.timestamp else "",
@@ -18,36 +20,47 @@ class TimelineFormatter:
             "actor_tool": e.actor_tool or "",
             "session_id": e.session_id or "",
             "summary": e.summary or "",
-            "sequence": e.sequence
+            "sequence": e.sequence,
         }
 
     @classmethod
-    def to_json(cls, events: List[TimelineEventModel]) -> str:
+    def to_json(cls, events: list[TimelineEventModel]) -> str:
         data = [cls.event_to_dict(e) for e in events]
         return json.dumps(data, indent=2)
 
     @classmethod
-    def to_csv(cls, events: List[TimelineEventModel]) -> str:
+    def to_csv(cls, events: list[TimelineEventModel]) -> str:
         output = io.StringIO()
-        fieldnames = ["Timestamp", "Category", "Source", "Description", "Session", "Connector"]
+        fieldnames = [
+            "Timestamp",
+            "Category",
+            "Source",
+            "Description",
+            "Session",
+            "Connector",
+        ]
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         writer.writeheader()
-        
+
         for e in events:
-            writer.writerow({
-                "Timestamp": str(e.timestamp) if e.timestamp else "",
-                "Category": e.normalized_event_type or "",
-                "Source": e.source or "",
-                "Description": e.summary or "",
-                "Session": e.session_id or "",
-                "Connector": e.actor_tool or e.source or ""
-            })
+            writer.writerow(
+                {
+                    "Timestamp": str(e.timestamp) if e.timestamp else "",
+                    "Category": e.normalized_event_type or "",
+                    "Source": e.source or "",
+                    "Description": e.summary or "",
+                    "Session": e.session_id or "",
+                    "Connector": e.actor_tool or e.source or "",
+                }
+            )
         return output.getvalue()
 
     @classmethod
-    def to_markdown(cls, events: List[TimelineEventModel]) -> str:
+    def to_markdown(cls, events: list[TimelineEventModel]) -> str:
         lines = ["# Prometra Timeline Export\n"]
-        lines.append("| Timestamp | Category | Source | Description | Session | Connector |")
+        lines.append(
+            "| Timestamp | Category | Source | Description | Session | Connector |"
+        )
         lines.append("| --- | --- | --- | --- | --- | --- |")
         for e in events:
             ts = str(e.timestamp) if e.timestamp else ""
@@ -60,7 +73,7 @@ class TimelineFormatter:
         return "\n".join(lines)
 
     @classmethod
-    def export_to_file(cls, events: List[TimelineEventModel], export_path: str) -> str:
+    def export_to_file(cls, events: list[TimelineEventModel], export_path: str) -> str:
         """Export timeline events to file based on file extension (.md, .csv, .json)."""
         ext = os.path.splitext(export_path)[1].lower()
         if ext == ".json":
@@ -72,12 +85,12 @@ class TimelineFormatter:
         else:
             # Default to Markdown if unknown extension
             content = cls.to_markdown(events)
-            
+
         parent_dir = os.path.dirname(export_path)
         if parent_dir and not os.path.exists(parent_dir):
             os.makedirs(parent_dir, exist_ok=True)
-            
+
         with open(export_path, "w", encoding="utf-8") as f:
             f.write(content)
-            
+
         return export_path

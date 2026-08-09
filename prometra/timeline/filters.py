@@ -1,16 +1,18 @@
-from typing import Optional
-from pydantic import BaseModel, Field
+
+from pydantic import BaseModel
+
 
 class TimelineFilter(BaseModel):
     """Filter criteria for Timeline queries."""
-    session_id: Optional[str] = None
-    event_type: Optional[str] = None
-    connector: Optional[str] = None
-    search: Optional[str] = None
+
+    session_id: str | None = None
+    event_type: str | None = None
+    connector: str | None = None
+    search: str | None = None
     today: bool = False
-    limit: Optional[int] = None
+    limit: int | None = None
     offset: int = 0
     reverse: bool = False
-    group: Optional[str] = None
+    group: str | None = None
     summary: bool = False
-    export: Optional[str] = None
+    export: str | None = None

@@ -1,15 +1,13 @@
-from typing import Optional, List, Dict, Any, Callable
-from rich.text import Text
+from typing import ClassVar
+
+from rich.console import RenderableType
 from rich.panel import Panel
 from rich.table import Table
-from rich.align import Align
-from rich.console import RenderableType
-
-from textual.widget import Widget
-from textual.widgets import Static, Input, Button, Label, ListView, ListItem
-from textual.containers import Container, Vertical, Horizontal, Grid
+from rich.text import Text
+from textual.containers import Vertical
 from textual.screen import ModalScreen
-from textual.app import RenderResult
+from textual.widgets import Button, Input, Label, ListItem, ListView, Static
+
 
 class MetricCard(Static):
     """Reusable metric card component displaying title, bold value, icon, and status."""
@@ -18,10 +16,10 @@ class MetricCard(Static):
         self,
         title: str,
         value: str,
-        subtitle: Optional[str] = None,
+        subtitle: str | None = None,
         icon: str = "📊",
         color: str = "cyan",
-        **kwargs
+        **kwargs,
     ):
         super().__init__(**kwargs)
         self.card_title = title
@@ -32,21 +30,23 @@ class MetricCard(Static):
 
     def render(self) -> RenderableType:
         content = Text()
-        content.append(f"{self.card_icon} {self.card_title.upper()}\n", style=f"bold {self.card_color}")
+        content.append(
+            f"{self.card_icon} {self.card_title.upper()}\n",
+            style=f"bold {self.card_color}",
+        )
         content.append(f"{self.card_value}\n", style="bold white")
         if self.card_subtitle:
             content.append(f"{self.card_subtitle}", style="dim gray")
 
-        return Panel(
-            content,
-            border_style=self.card_color,
-            padding=(0, 1)
-        )
+        return Panel(content, border_style=self.card_color, padding=(0, 1))
+
 
 class HeaderBar(Static):
     """Custom Header widget displaying Prometra title, active session, and clock."""
 
-    def __init__(self, session_id: str = "No Active Session", theme_name: str = "cyan", **kwargs):
+    def __init__(
+        self, session_id: str = "No Active Session", theme_name: str = "cyan", **kwargs
+    ):
         super().__init__(**kwargs)
         self.session_id = session_id
         self.theme_name = theme_name
@@ -59,10 +59,13 @@ class HeaderBar(Static):
 
         left_text = Text("🚀 PROMETRA TUI", style="bold cyan")
         center_text = Text(f"Session: {self.session_id}", style="bold yellow")
-        right_text = Text(f"Theme: {self.theme_name.upper()} | Local-First", style="dim white")
+        right_text = Text(
+            f"Theme: {self.theme_name.upper()} | Local-First", style="dim white"
+        )
 
         table.add_row(left_text, center_text, right_text)
         return Panel(table, style="on #1E293B", border_style="cyan")
+
 
 class StatusBar(Static):
     """Footer status bar widget displaying view shortcuts and status indicators."""
@@ -76,12 +79,15 @@ class StatusBar(Static):
         status_text = Text()
         status_text.append(f" VIEW: {self.active_view.upper()} |", style="bold green")
         status_text.append(shortcuts, style="dim white")
-        return Panel(status_text, style="on #0F172A", border_style="blue", padding=(0, 0))
+        return Panel(
+            status_text, style="on #0F172A", border_style="blue", padding=(0, 0)
+        )
+
 
 class CommandPaletteModal(ModalScreen[str]):
     """Modal screen for Command Palette (Ctrl+P)."""
 
-    COMMANDS = [
+    COMMANDS: ClassVar[list[tuple[str, str]]] = [
         ("1", "Dashboard - Overview Metrics & Activity"),
         ("2", "Timeline - Interactive Event Stream"),
         ("3", "Replay - Coding Session Player"),
@@ -100,7 +106,10 @@ class CommandPaletteModal(ModalScreen[str]):
     def compose(self):
         with Vertical(id="dialog"):
             yield Label("⚡ COMMAND PALETTE", id="palette_title")
-            yield Input(placeholder="Type view number (0-9), action, or filter...", id="palette_input")
+            yield Input(
+                placeholder="Type view number (0-9), action, or filter...",
+                id="palette_input",
+            )
             with ListView(id="palette_list"):
                 for key, label in self.COMMANDS:
                     yield ListItem(Label(f"[{key}] {label}"))
@@ -140,13 +149,17 @@ class CommandPaletteModal(ModalScreen[str]):
     def on_button_pressed(self, event: Button.Pressed):
         self.dismiss("cancel")
 
+
 class SearchModal(ModalScreen[str]):
     """Modal screen for Search Popup (Ctrl+F)."""
 
     def compose(self):
         with Vertical(id="search_dialog"):
             yield Label("🔍 SEARCH EVENT HISTORY", id="search_modal_title")
-            yield Input(placeholder="Enter search keyword (e.g. auth, git, file.py)...", id="search_modal_input")
+            yield Input(
+                placeholder="Enter search keyword (e.g. auth, git, file.py)...",
+                id="search_modal_input",
+            )
             yield Button("Search", id="search_modal_btn")
 
     def on_input_submitted(self, event: Input.Submitted):

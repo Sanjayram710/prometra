@@ -26,6 +26,7 @@ Create a Python file (e.g. `my_notifier.py`) inheriting from `prometra.plugins.B
 from typing import Dict, Any
 from prometra.plugins import BasePlugin
 
+
 class AuditNotifierPlugin(BasePlugin):
     name = "AuditNotifierPlugin"
     version = "1.0.0"

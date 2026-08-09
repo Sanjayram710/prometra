@@ -1,5 +1,5 @@
-from pydantic import BaseModel
 from prometra.connectors.models import ConnectorMetadata
+
 
 class ClaudeMetadata(ConnectorMetadata):
     executable_path: str = ""

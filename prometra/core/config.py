@@ -1,12 +1,14 @@
+
 from pydantic import BaseModel, Field
-from typing import List, Optional
+
 
 class ProjectConfig(BaseModel):
     name: str = "Default Project"
     root: str = "."
-    description: Optional[str] = None
-    client: Optional[str] = None
+    description: str | None = None
+    client: str | None = None
     environment: str = "development"
+
 
 class TrackingConfig(BaseModel):
     enabled: bool = True
@@ -18,10 +20,20 @@ class TrackingConfig(BaseModel):
     responses: bool = False
     tool_calls: bool = False
     capture_content: bool = False
-    include: List[str] = Field(default_factory=lambda: ["src/**", "tests/**"])
-    exclude: List[str] = Field(default_factory=lambda: [".git/**", ".venv/**", "node_modules/**", "dist/**", "build/**", ".prometra/**"])
+    include: list[str] = Field(default_factory=lambda: ["src/**", "tests/**"])
+    exclude: list[str] = Field(
+        default_factory=lambda: [
+            ".git/**",
+            ".venv/**",
+            "node_modules/**",
+            "dist/**",
+            "build/**",
+            ".prometra/**",
+        ]
+    )
     debounce_ms: int = 250
     max_queue_size: int = 10000
+
 
 class GitConfig(BaseModel):
     enabled: bool = True
@@ -31,6 +43,7 @@ class GitConfig(BaseModel):
     capture_merge_history: bool = True
     capture_tags: bool = True
 
+
 class FilesystemConfig(BaseModel):
     enabled: bool = True
     watch: bool = True
@@ -38,6 +51,7 @@ class FilesystemConfig(BaseModel):
     hash_files: bool = False
     record_content: bool = False
     max_file_size_mb: int = 10
+
 
 class StorageConfig(BaseModel):
     backend: str = "sqlite"
@@ -49,6 +63,7 @@ class StorageConfig(BaseModel):
     redact_secrets: bool = True
     retention_days: int = 365
     max_database_size_mb: int = 2048
+
 
 class PrometraConfig(BaseModel):
     project: ProjectConfig = Field(default_factory=ProjectConfig)

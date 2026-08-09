@@ -1,32 +1,34 @@
-import pytest
-import os
-import json
-import tempfile
 import datetime
+import json
+import os
+import tempfile
+
+import pytest
 from typer.testing import CliRunner
 
 from prometra.cli.main import app
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, AiEventModel, GitEventModel, SessionModel
+from prometra.core.time import utcnow
+from prometra.intelligence.analyzer import IntelligenceAnalyzer
 from prometra.intelligence.models import (
-    AiUsageStats,
-    ProductivityScore,
     CodingPattern,
-    Recommendation,
-    SessionClassification,
-    SessionSummary,
-    InsightsResult,
 )
-from prometra.intelligence.scorer import ProductivityScorer
 from prometra.intelligence.patterns import PatternDetector
 from prometra.intelligence.productivity import SessionClassifier
 from prometra.intelligence.recommendations import RecommendationEngine
+from prometra.intelligence.scorer import ProductivityScorer
 from prometra.intelligence.summaries import SummaryBuilder
-from prometra.intelligence.analyzer import IntelligenceAnalyzer
+from prometra.storage.models import (
+    AiEventModel,
+    FilesystemEventModel,
+    GitEventModel,
+    SessionModel,
+    TimelineEventModel,
+)
+from prometra.storage.sqlite import SQLiteStorage
 from prometra.tui.views.insights_view import InsightsView
-from prometra.core.time import utcnow
 
 runner = CliRunner()
+
 
 @pytest.fixture
 def temp_storage():
@@ -38,10 +40,11 @@ def temp_storage():
         finally:
             storage.engine.dispose()
 
+
 @pytest.fixture
 def populated_intel_db(temp_storage):
     db = temp_storage.get_session()
-    
+
     s1 = SessionModel(
         session_id="intel-sess-1",
         project_id="intel_proj",
@@ -49,7 +52,7 @@ def populated_intel_db(temp_storage):
         duration_seconds=3600,
         project_path="/app",
         working_directory="/app",
-        status="completed"
+        status="completed",
     )
     db.add(s1)
 
@@ -60,7 +63,7 @@ def populated_intel_db(temp_storage):
         sequence=1,
         source="filesystem",
         session_id="intel-sess-1",
-        summary="File created: main.py"
+        summary="File created: main.py",
     )
     tl2 = TimelineEventModel(
         normalized_event_type="ai_prompt",
@@ -68,7 +71,7 @@ def populated_intel_db(temp_storage):
         sequence=2,
         source="claude",
         session_id="intel-sess-1",
-        summary="Prompt: Add user feature"
+        summary="Prompt: Add user feature",
     )
     tl3 = TimelineEventModel(
         normalized_event_type="git",
@@ -76,7 +79,7 @@ def populated_intel_db(temp_storage):
         sequence=3,
         source="git",
         session_id="intel-sess-1",
-        summary="git commit: feat: add new feature"
+        summary="git commit: feat: add new feature",
     )
     db.add_all([tl1, tl2, tl3])
 
@@ -88,7 +91,7 @@ def populated_intel_db(temp_storage):
         timestamp=utcnow() - datetime.timedelta(hours=2),
         operation="created",
         path="main.py",
-        normalized_relative_path="main.py"
+        normalized_relative_path="main.py",
     )
     fs2 = FilesystemEventModel(
         event_id="fs-2",
@@ -97,7 +100,7 @@ def populated_intel_db(temp_storage):
         timestamp=utcnow() - datetime.timedelta(hours=1, minutes=50),
         operation="modified",
         path="main.py",
-        normalized_relative_path="main.py"
+        normalized_relative_path="main.py",
     )
     db.add_all([fs1, fs2])
 
@@ -108,7 +111,7 @@ def populated_intel_db(temp_storage):
         timestamp=utcnow() - datetime.timedelta(hours=1, minutes=45),
         event_type="UserPrompt",
         connector="claude",
-        description="Prompt: Add user feature"
+        description="Prompt: Add user feature",
     )
     db.add(ai1)
 
@@ -120,13 +123,14 @@ def populated_intel_db(temp_storage):
         timestamp=utcnow() - datetime.timedelta(hours=1, minutes=30),
         commit_id="abc1234",
         message="feat: add new feature",
-        author="Dev"
+        author="Dev",
     )
     db.add(git1)
 
     db.commit()
     db.close()
     return temp_storage
+
 
 def test_productivity_scorer():
     score_res = ProductivityScorer.calculate_score(
@@ -135,12 +139,13 @@ def test_productivity_scorer():
         files_modified=5,
         commits=3,
         ai_prompts=5,
-        context_switches=1
+        context_switches=1,
     )
     assert 0 <= score_res.score <= 100
     assert len(score_res.stars) == 5
     assert "★" in score_res.stars
     assert "focus_time" in score_res.breakdown
+
 
 def test_pattern_detector():
     patterns = PatternDetector.detect_patterns(
@@ -150,7 +155,7 @@ def test_pattern_detector():
         top_files=[{"path": "app.py", "count": 10}],
         commit_messages=["fix: resolve crash"],
         prompts=["fix bug in main"],
-        context_switches=6
+        context_switches=6,
     )
     names = [p.name for p in patterns]
     assert "Long Coding Session" in names
@@ -158,13 +163,14 @@ def test_pattern_detector():
     assert "Repeated File Churn" in names
     assert "Bug-Fix Activity" in names
 
+
 def test_session_classifier():
     cls_feat = SessionClassifier.classify_session(
         files_created=3,
         files_modified=5,
         commit_messages=["feat: add auth"],
         prompts=["build authentication endpoint"],
-        file_paths=["auth.py", "user.py"]
+        file_paths=["auth.py", "user.py"],
     )
     assert cls_feat.primary_category == "Feature Development"
     assert cls_feat.confidence > 0.5
@@ -174,12 +180,19 @@ def test_session_classifier():
         files_modified=2,
         commit_messages=["fix: resolve null crash"],
         prompts=["fix exception in handler"],
-        file_paths=["handler.py"]
+        file_paths=["handler.py"],
     )
     assert cls_bug.primary_category == "Bug Fix"
 
+
 def test_recommendation_engine():
-    patterns = [CodingPattern(name="Frequent Context Switching", category="context_switch", description="Switched context")]
+    patterns = [
+        CodingPattern(
+            name="Frequent Context Switching",
+            category="context_switch",
+            description="Switched context",
+        )
+    ]
     top_files = [{"path": "core.py", "count": 12}]
 
     recs = RecommendationEngine.generate_recommendations(
@@ -188,16 +201,19 @@ def test_recommendation_engine():
         files_modified=5,
         commits=0,
         patterns=patterns,
-        top_files=top_files
+        top_files=top_files,
     )
     titles = [r.title for r in recs]
     assert "Frequent Commit Practice" in titles
     assert "Rest & Break Reminder" in titles
     assert "File Refactoring Opportunity" in titles
 
+
 def test_summary_builder(populated_intel_db):
     builder = SummaryBuilder(populated_intel_db)
-    summary, ai_usage, commits, prompts, file_paths = builder.build_summary(session_id="intel-sess-1")
+    summary, ai_usage, _commits, _prompts, _file_paths = builder.build_summary(
+        session_id="intel-sess-1"
+    )
 
     assert summary.session_id == "intel-sess-1"
     assert summary.files_created == 1
@@ -206,6 +222,7 @@ def test_summary_builder(populated_intel_db):
     assert summary.ai_prompts >= 1
     assert "Python" in summary.languages
     assert ai_usage.total_prompts >= 1
+
 
 def test_intelligence_analyzer_and_exporters(populated_intel_db):
     analyzer = IntelligenceAnalyzer(populated_intel_db)
@@ -227,11 +244,13 @@ def test_intelligence_analyzer_and_exporters(populated_intel_db):
     assert "Session ID" in csv_str
     assert "intel-sess-1" in csv_str
 
+
 def test_insights_tui_view(populated_intel_db):
     view = InsightsView(storage=populated_intel_db)
     view.refresh_data()
     rendered = view.render()
     assert rendered is not None
+
 
 def test_cli_insights(monkeypatch, populated_intel_db):
     monkeypatch.setattr("prometra.cli.commands.get_storage", lambda: populated_intel_db)

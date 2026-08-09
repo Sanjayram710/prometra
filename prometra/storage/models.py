@@ -1,13 +1,26 @@
 import datetime
-from sqlalchemy import Column, String, Integer, Float, DateTime, Boolean, JSON, ForeignKey, TypeDecorator
+
+from sqlalchemy import (
+    JSON,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    TypeDecorator,
+)
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
+
 
 class AwareDateTime(TypeDecorator):
     """
     Ensure datetimes are timezone-aware and stored in UTC.
     """
+
     impl = DateTime
     cache_ok = True
 
@@ -15,13 +28,14 @@ class AwareDateTime(TypeDecorator):
         if value is not None:
             if not value.tzinfo:
                 raise TypeError("tz-naive datetime objects are not allowed.")
-            return value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            return value.astimezone(datetime.UTC).replace(tzinfo=None)
         return value
 
     def process_result_value(self, value, dialect):
         if value is not None:
-            return value.replace(tzinfo=datetime.timezone.utc)
+            return value.replace(tzinfo=datetime.UTC)
         return value
+
 
 class WorkspaceModel(Base):
     __tablename__ = "workspaces"
@@ -40,6 +54,7 @@ class WorkspaceModel(Base):
     status = Column(String)
     configuration_version = Column(String)
     privacy_mode = Column(String)
+
 
 class SessionModel(Base):
     __tablename__ = "sessions"
@@ -64,6 +79,7 @@ class SessionModel(Base):
     warnings = Column(JSON)
     confidence = Column(Float)
 
+
 class FilesystemEventModel(Base):
     __tablename__ = "filesystem_events"
     event_id = Column(String, primary_key=True)
@@ -81,6 +97,7 @@ class FilesystemEventModel(Base):
     source = Column(String)
     confidence = Column(Float)
     redaction_state = Column(String)
+
 
 class GitEventModel(Base):
     __tablename__ = "git_events"
@@ -102,6 +119,7 @@ class GitEventModel(Base):
     session_relation = Column(String)
     source = Column(String)
 
+
 class TimelineEventModel(Base):
     __tablename__ = "timeline_events"
     id = Column(Integer, primary_key=True, autoincrement=True)
@@ -117,6 +135,7 @@ class TimelineEventModel(Base):
     confidence = Column(Float)
     analysis_version = Column(String)
 
+
 class AiEventModel(Base):
     __tablename__ = "ai_events"
     event_id = Column(String, primary_key=True)
@@ -131,4 +150,3 @@ class AiEventModel(Base):
     cost = Column(Float, default=0.0)
     description = Column(String)
     extra_metadata = Column(JSON)
-

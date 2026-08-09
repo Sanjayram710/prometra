@@ -1,22 +1,28 @@
 import typer
 from rich.console import Console
 from rich.table import Table
-from prometra.plugins.manager import PluginManager
-from prometra.plugins.exceptions import PluginNotFoundError
 
-app = typer.Typer(help="Manage Prometra plugins and extensions", invoke_without_command=True)
+from prometra.plugins.exceptions import PluginNotFoundError
+from prometra.plugins.manager import PluginManager
+
+app = typer.Typer(
+    help="Manage Prometra plugins and extensions", invoke_without_command=True
+)
 console = Console()
+
 
 def get_manager() -> PluginManager:
     pm = PluginManager()
     pm.load_plugins()
     return pm
 
+
 @app.callback(invoke_without_command=True)
 def main(ctx: typer.Context):
     """List installed plugins if no subcommand is provided."""
     if ctx.invoked_subcommand is None:
         list_plugins()
+
 
 @app.command("list")
 def list_plugins():
@@ -31,16 +37,21 @@ def list_plugins():
         return
 
     for item in summary:
-        status_str = f"[green]enabled[/green]" if item["status"] == "enabled" else f"[yellow]disabled[/yellow]"
+        status_str = (
+            "[green]enabled[/green]"
+            if item["status"] == "enabled"
+            else "[yellow]disabled[/yellow]"
+        )
         table.add_row(
             item["name"],
             item["version"],
             status_str,
             item["author"] or "N/A",
-            item["description"] or ""
+            item["description"] or "",
         )
 
     console.print(table)
+
 
 @app.command("enable")
 def enable(plugin_name: str = typer.Argument(..., help="Name of the plugin to enable")):
@@ -51,18 +62,22 @@ def enable(plugin_name: str = typer.Argument(..., help="Name of the plugin to en
         console.print(f"[green]Enabled plugin '{plugin_name}'.[/green]")
     except PluginNotFoundError as e:
         console.print(f"[red]Error:[/red] {e}")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]Failed to enable plugin:[/red] {e}")
 
+
 @app.command("disable")
-def disable(plugin_name: str = typer.Argument(..., help="Name of the plugin to disable")):
+def disable(
+    plugin_name: str = typer.Argument(..., help="Name of the plugin to disable"),
+):
     """Disable a plugin by name."""
     pm = get_manager()
     try:
         pm.disable_plugin(plugin_name)
         console.print(f"[yellow]Disabled plugin '{plugin_name}'.[/yellow]")
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]Failed to disable plugin:[/red] {e}")
+
 
 @app.command("reload")
 def reload():
@@ -70,6 +85,8 @@ def reload():
     pm = get_manager()
     try:
         reloaded = pm.reload_plugins()
-        console.print(f"[green]Reloaded plugins successfully ({len(reloaded)} active).[/green]")
-    except Exception as e:
+        console.print(
+            f"[green]Reloaded plugins successfully ({len(reloaded)} active).[/green]"
+        )
+    except Exception as e:  # noqa: BLE001
         console.print(f"[red]Failed to reload plugins:[/red] {e}")

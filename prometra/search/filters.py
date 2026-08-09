@@ -1,13 +1,15 @@
 import datetime
-from typing import Optional, Union, Dict, Any
-from prometra.core.time import utcnow
+
 from prometra.search.models import SearchFilter
+
 
 class FilterValidator:
     """Validates and processes search filter inputs."""
 
     @staticmethod
-    def parse_date(date_val: Optional[Union[str, datetime.datetime]]) -> Optional[datetime.datetime]:
+    def parse_date(
+        date_val: str | datetime.datetime | None,
+    ) -> datetime.datetime | None:
         """Parse YYYY-MM-DD or ISO date string safely, returning datetime or None."""
         if not date_val:
             return None
@@ -17,7 +19,7 @@ class FilterValidator:
             try:
                 dt = datetime.datetime.fromisoformat(date_val)
                 if not dt.tzinfo:
-                    dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    dt = dt.replace(tzinfo=datetime.UTC)
                 return dt
             except ValueError:
                 # Invalid date string format
@@ -28,14 +30,14 @@ class FilterValidator:
     def process_filters(
         cls,
         query: str,
-        category: Optional[str] = None,
-        session_id: Optional[str] = None,
-        since: Optional[Union[str, datetime.datetime]] = None,
-        until: Optional[Union[str, datetime.datetime]] = None,
+        category: str | None = None,
+        session_id: str | None = None,
+        since: str | datetime.datetime | None = None,
+        until: str | datetime.datetime | None = None,
         today: bool = False,
         week: bool = False,
-        limit: Optional[int] = None,
-        export: Optional[str] = None
+        limit: int | None = None,
+        export: str | None = None,
     ) -> SearchFilter:
         """Process and validate raw search CLI parameters into a clean SearchFilter model."""
         since_dt = cls.parse_date(since)
@@ -50,5 +52,5 @@ class FilterValidator:
             today=today,
             week=week,
             limit=limit,
-            export=export
+            export=export,
         )

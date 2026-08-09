@@ -1,4 +1,5 @@
-from typing import Dict, Any, Optional
+from typing import Any
+
 
 class BasePlugin:
     """Abstract base class for all Prometra plugins."""
@@ -9,52 +10,43 @@ class BasePlugin:
     description: str = ""
     enabled: bool = True
 
-    def __init__(self, config: Optional[Dict[str, Any]] = None):
-        self.config: Dict[str, Any] = config or {}
+    def __init__(self, config: dict[str, Any] | None = None):
+        self.config: dict[str, Any] = config or {}
 
-    def initialize(self, context: Optional[Dict[str, Any]] = None) -> None:
+    def initialize(self, context: dict[str, Any] | None = None) -> None:
         """Lifecycle hook called when the plugin is loaded and initialized."""
-        pass
 
     def shutdown(self) -> None:
         """Lifecycle hook called when the plugin is being shut down."""
-        pass
 
     # Optional Event Hooks
-    def on_session_started(self, session_data: Dict[str, Any]) -> None:
+    def on_session_started(self, session_data: dict[str, Any]) -> None:
         """Event hook triggered when a new tracking session starts."""
-        pass
 
-    def on_session_ended(self, session_data: Dict[str, Any]) -> None:
+    def on_session_ended(self, session_data: dict[str, Any]) -> None:
         """Event hook triggered when a tracking session ends."""
-        pass
 
-    def on_file_changed(self, event_data: Dict[str, Any]) -> None:
+    def on_file_changed(self, event_data: dict[str, Any]) -> None:
         """Event hook triggered when a file creation, modification, or deletion is recorded."""
-        pass
 
-    def on_git_commit(self, event_data: Dict[str, Any]) -> None:
+    def on_git_commit(self, event_data: dict[str, Any]) -> None:
         """Event hook triggered when a Git commit is recorded."""
-        pass
 
-    def on_search(self, query_data: Dict[str, Any]) -> None:
+    def on_search(self, query_data: dict[str, Any]) -> None:
         """Event hook triggered when an intelligent search is executed."""
-        pass
 
-    def on_diff(self, diff_data: Dict[str, Any]) -> None:
+    def on_diff(self, diff_data: dict[str, Any]) -> None:
         """Event hook triggered when a file diff is generated."""
-        pass
 
-    def on_compare(self, compare_data: Dict[str, Any]) -> None:
+    def on_compare(self, compare_data: dict[str, Any]) -> None:
         """Event hook triggered when a session comparison is executed."""
-        pass
 
-    def metadata(self) -> Dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Return metadata describing the plugin."""
         return {
             "name": self.name,
             "version": self.version,
             "author": self.author,
             "description": self.description,
-            "enabled": self.enabled
+            "enabled": self.enabled,
         }

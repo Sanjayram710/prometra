@@ -1,23 +1,26 @@
-import os
-import sys
 import importlib.util
 import inspect
-from typing import List, Type, Optional, Dict, Any
+import os
+import sys
 
 from prometra.plugins.base import BasePlugin
 from prometra.plugins.registry import PluginRegistry
-from prometra.plugins.exceptions import PluginLoadError
+
 
 class PluginLoader:
     """Discovers and dynamically loads Prometra plugins from specified directories."""
 
-    def __init__(self, registry: Optional[PluginRegistry] = None, search_paths: Optional[List[str]] = None):
+    def __init__(
+        self,
+        registry: PluginRegistry | None = None,
+        search_paths: list[str] | None = None,
+    ):
         self.registry = registry or PluginRegistry()
-        self.search_paths: List[str] = search_paths or self._default_search_paths()
-        self.load_errors: Dict[str, str] = {}
+        self.search_paths: list[str] = search_paths or self._default_search_paths()
+        self.load_errors: dict[str, str] = {}
 
     @staticmethod
-    def _default_search_paths() -> List[str]:
+    def _default_search_paths() -> list[str]:
         """Return default plugin discovery search paths."""
         user_path = os.path.expanduser("~/.prometra/plugins")
         local_path = os.path.abspath(os.path.join(".prometra", "plugins"))
@@ -28,9 +31,9 @@ class PluginLoader:
             paths.append(local_path)
         return paths
 
-    def discover_and_load(self) -> List[Type[BasePlugin]]:
+    def discover_and_load(self) -> list[type[BasePlugin]]:
         """Scan search paths, dynamically load valid BasePlugin classes, and register them."""
-        loaded_classes: List[Type[BasePlugin]] = []
+        loaded_classes: list[type[BasePlugin]] = []
 
         for directory in self.search_paths:
             if not os.path.exists(directory) or not os.path.isdir(directory):
@@ -45,15 +48,17 @@ class PluginLoader:
                             try:
                                 self.registry.register(p_cls, overwrite=False)
                                 loaded_classes.append(p_cls)
-                            except Exception as e:
+                            except Exception as e:  # noqa: BLE001
                                 self.load_errors[file_path] = str(e)
 
         return loaded_classes
 
-    def load_plugin_from_file(self, file_path: str) -> List[Type[BasePlugin]]:
+    def load_plugin_from_file(self, file_path: str) -> list[type[BasePlugin]]:
         """Dynamically load a Python file and return any BasePlugin subclasses defined within it."""
-        discovered: List[Type[BasePlugin]] = []
-        module_name = f"prometra_plugin_{os.path.splitext(os.path.basename(file_path))[0]}"
+        discovered: list[type[BasePlugin]] = []
+        module_name = (
+            f"prometra_plugin_{os.path.splitext(os.path.basename(file_path))[0]}"
+        )
 
         try:
             spec = importlib.util.spec_from_file_location(module_name, file_path)
@@ -66,12 +71,14 @@ class PluginLoader:
             spec.loader.exec_module(module)
 
             for name, obj in inspect.getmembers(module, inspect.isclass):
-                if issubclass(obj, BasePlugin) and obj is not BasePlugin:
-                    # Ensure plugin is defined in the loaded module (not imported)
-                    if obj.__module__ == module_name or getattr(obj, "name", None):
-                        discovered.append(obj)
+                if (
+                    issubclass(obj, BasePlugin)
+                    and obj is not BasePlugin
+                    and (obj.__module__ == module_name or getattr(obj, "name", None))
+                ):
+                    discovered.append(obj)
 
-        except Exception as e:
-            self.load_errors[file_path] = f"Load error: {str(e)}"
+        except Exception as e:  # noqa: BLE001
+            self.load_errors[file_path] = f"Load error: {e!s}"
 
         return discovered

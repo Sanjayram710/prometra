@@ -1,20 +1,27 @@
-import uuid
 import datetime
-from typing import List, Dict, Any, Optional
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, GitEventModel, AiEventModel
-from prometra.timeline.filters import TimelineFilter
-from prometra.timeline.queries import TimelineQueryEngine
-from prometra.timeline.formatter import TimelineFormatter
-from prometra.timeline.summary import TimelineSummaryGenerator, SummaryMetrics
-from prometra.connectors.events import EventBus, BaseEvent
+import uuid
+from typing import Any
+
 from prometra.ai.events import AiEvent
+from prometra.connectors.events import BaseEvent, EventBus
 from prometra.core.time import utcnow
+from prometra.storage.models import (
+    AiEventModel,
+    FilesystemEventModel,
+    GitEventModel,
+    TimelineEventModel,
+)
+from prometra.storage.sqlite import SQLiteStorage
+from prometra.timeline.filters import TimelineFilter
+from prometra.timeline.formatter import TimelineFormatter
+from prometra.timeline.queries import TimelineQueryEngine
+from prometra.timeline.summary import SummaryMetrics, TimelineSummaryGenerator
+
 
 class TimelineEngine:
     """Core engine for timeline recording, querying, filtering, summary, and formatting."""
 
-    def __init__(self, storage: SQLiteStorage, event_bus: Optional[EventBus] = None):
+    def __init__(self, storage: SQLiteStorage, event_bus: EventBus | None = None):
         self.storage = storage
         self.query_engine = TimelineQueryEngine(storage)
         self.summary_generator = TimelineSummaryGenerator(self.query_engine)
@@ -38,12 +45,12 @@ class TimelineEngine:
         try:
             max_seq = db.query(TimelineEventModel).count()
             specific_event_id = str(uuid.uuid4())
-            
+
             # Parse timestamp if string or datetime
             if isinstance(ai_event.timestamp, str) and ai_event.timestamp:
                 try:
                     ts = datetime.datetime.fromisoformat(ai_event.timestamp)
-                except Exception:
+                except (ValueError, TypeError):
                     ts = utcnow()
             elif isinstance(ai_event.timestamp, datetime.datetime):
                 ts = ai_event.timestamp
@@ -66,7 +73,7 @@ class TimelineEngine:
                 token_usage=token_dict,
                 cost=ai_event.cost,
                 description=desc,
-                extra_metadata=ai_event.metadata
+                extra_metadata=ai_event.metadata,
             )
             db.add(ai_db_record)
 
@@ -79,7 +86,7 @@ class TimelineEngine:
                 actor_tool=ai_event.connector_name,
                 session_id=ai_event.session_id,
                 related_event_ids=[specific_event_id],
-                summary=desc
+                summary=desc,
             )
             db.add(tl_event)
             db.commit()
@@ -91,11 +98,11 @@ class TimelineEngine:
         db = self.storage.get_session()
         try:
             max_seq = db.query(TimelineEventModel).count()
-            
+
             # Create Specific Event
             specific_event_id = str(uuid.uuid4())
             event_type = event_data.get("type", "unknown")
-            
+
             if event_type == "filesystem":
                 fs_event = FilesystemEventModel(
                     event_id=specific_event_id,
@@ -103,9 +110,10 @@ class TimelineEngine:
                     project_id=event_data.get("project_id") or "default_project",
                     timestamp=event_data.get("timestamp"),
                     path=event_data.get("path") or "unknown",
-                    normalized_relative_path=event_data.get("normalized_relative_path") or "unknown",
+                    normalized_relative_path=event_data.get("normalized_relative_path")
+                    or "unknown",
                     operation=event_data.get("operation") or "modified",
-                    source=event_data.get("source", "filesystem")
+                    source=event_data.get("source", "filesystem"),
                 )
                 db.add(fs_event)
             elif event_type == "git":
@@ -123,10 +131,10 @@ class TimelineEngine:
                     merge_flag=event_data.get("merge_flag", False),
                     tag=event_data.get("tag"),
                     parent_commits=event_data.get("parent_commits", []),
-                    source=event_data.get("source", "git")
+                    source=event_data.get("source", "git"),
                 )
                 db.add(git_event)
-            
+
             # Normalize event type
             if event_type == "session":
                 sum_lower = (event_data.get("summary") or "").lower()
@@ -145,10 +153,13 @@ class TimelineEngine:
                 timestamp=event_data.get("timestamp") or utcnow(),
                 sequence=max_seq + 1,
                 source=event_data.get("source", "system"),
-                actor_tool=event_data.get("actor_tool") or event_data.get("connector_name"),
+                actor_tool=event_data.get("actor_tool")
+                or event_data.get("connector_name"),
                 session_id=event_data.get("session_id"),
-                related_event_ids=[specific_event_id] if event_type in ["filesystem", "git"] else [],
-                summary=event_data.get("summary", "")
+                related_event_ids=[specific_event_id]
+                if event_type in ["filesystem", "git"]
+                else [],
+                summary=event_data.get("summary", ""),
             )
             db.add(tl_event)
             db.commit()
@@ -157,16 +168,16 @@ class TimelineEngine:
 
     def get_events(
         self,
-        limit: Optional[int] = 100,
+        limit: int | None = 100,
         offset: int = 0,
-        session_id: Optional[str] = None,
-        event_type: Optional[str] = None,
+        session_id: str | None = None,
+        event_type: str | None = None,
         after_timestamp=None,
-        connector: Optional[str] = None,
-        search: Optional[str] = None,
+        connector: str | None = None,
+        search: str | None = None,
         today: bool = False,
-        reverse: bool = False
-    ) -> List[TimelineEventModel]:
+        reverse: bool = False,
+    ) -> list[TimelineEventModel]:
         """Fetch filtered timeline events (backwards-compatible API)."""
         filters = TimelineFilter(
             session_id=session_id,
@@ -176,14 +187,16 @@ class TimelineEngine:
             today=today,
             limit=limit,
             offset=offset,
-            reverse=reverse
+            reverse=reverse,
         )
         events = self.query_engine.fetch_events(filters)
         if after_timestamp:
-            events = [e for e in events if e.timestamp and e.timestamp >= after_timestamp]
+            events = [
+                e for e in events if e.timestamp and e.timestamp >= after_timestamp
+            ]
         return events
 
-    def query_events(self, filters: TimelineFilter) -> List[TimelineEventModel]:
+    def query_events(self, filters: TimelineFilter) -> list[TimelineEventModel]:
         """Execute query using TimelineFilter model."""
         return self.query_engine.fetch_events(filters)
 
@@ -191,7 +204,7 @@ class TimelineEngine:
         """Generate timeline summary metrics."""
         return self.summary_generator.generate(filters)
 
-    def get_grouped(self, filters: TimelineFilter) -> List[Dict[str, Any]]:
+    def get_grouped(self, filters: TimelineFilter) -> list[dict[str, Any]]:
         """Fetch timeline events grouped by session."""
         return self.query_engine.fetch_grouped_by_session(filters)
 
@@ -207,7 +220,9 @@ class TimelineEngine:
             ai_event = db.query(AiEventModel).filter_by(event_id=event_id).first()
             if ai_event:
                 return ai_event
-            fs_event = db.query(FilesystemEventModel).filter_by(event_id=event_id).first()
+            fs_event = (
+                db.query(FilesystemEventModel).filter_by(event_id=event_id).first()
+            )
             if fs_event:
                 return fs_event
             git_event = db.query(GitEventModel).filter_by(event_id=event_id).first()

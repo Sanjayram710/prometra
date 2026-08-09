@@ -1,36 +1,40 @@
+import contextlib
 import os
 import uuid
-import datetime
-from typing import List, Dict, Any, Tuple, Optional
 
-from prometra.timemachine.models import FileSnapshot, CheckpointModel
-from prometra.timemachine.storage import CheckpointStorage
-from prometra.storage.sqlite import SQLiteStorage
-from prometra.storage.models import TimelineEventModel, FilesystemEventModel, SessionModel
-from prometra.intelligence.analyzer import IntelligenceAnalyzer
-from prometra.tracker.ignore import IgnoreManager
 from prometra.core.time import utcnow
+from prometra.intelligence.analyzer import IntelligenceAnalyzer
+from prometra.storage.sqlite import SQLiteStorage
+from prometra.timemachine.models import CheckpointModel, FileSnapshot
+from prometra.timemachine.storage import CheckpointStorage
+from prometra.tracker.ignore import IgnoreManager
+
 
 class SnapshotEngine:
     """Captures current project file snapshots, Git state, AI prompts, and productivity metrics."""
 
-    def __init__(self, storage: SQLiteStorage, root_dir: Optional[str] = None):
+    def __init__(self, storage: SQLiteStorage, root_dir: str | None = None):
         self.storage = storage
         self.root_dir = root_dir or os.path.abspath(".")
         self.ignore = IgnoreManager(self.root_dir)
 
-    def _get_git_info(self) -> Tuple[str, str]:
+    def _get_git_info(self) -> tuple[str, str]:
         """Extract current Git branch and commit hash if available."""
         try:
             from git import Repo
+
             repo = Repo(self.root_dir, search_parent_directories=True)
-            branch = repo.active_branch.name if not repo.head.is_detached else "detached"
+            branch = (
+                repo.active_branch.name if not repo.head.is_detached else "detached"
+            )
             commit = repo.head.commit.hexsha[:7]
             return branch, commit
-        except Exception:
+        except Exception:  # noqa: BLE001
             return "main", "N/A"
 
-    def capture_snapshot(self, message: str = "Checkpoint", session_id: Optional[str] = None) -> Tuple[CheckpointModel, List[FileSnapshot]]:
+    def capture_snapshot(
+        self, message: str = "Checkpoint", session_id: str | None = None
+    ) -> tuple[CheckpointModel, list[FileSnapshot]]:
         """Capture full project snapshot and build CheckpointModel."""
         now = utcnow()
         branch, commit = self._get_git_info()
@@ -40,23 +44,26 @@ class SnapshotEngine:
         ai_prompts_count = 0
         summary_text = message
 
-        try:
+        with contextlib.suppress(Exception):
             analyzer = IntelligenceAnalyzer(self.storage)
             intel_res = analyzer.analyze_session(session_id=session_id)
             intelligence_score = intel_res.productivity.score
             ai_prompts_count = intel_res.ai_usage.total_prompts
             if not message or message == "Checkpoint":
                 summary_text = f"{intel_res.classification.primary_category}: {intel_res.summary.total_events} events"
-        except Exception:
-            pass
 
         # 2. Scan workspace files
-        snapshots: List[FileSnapshot] = []
-        file_hashes: Dict[str, str] = {}
-        modified_files: List[str] = []
+        snapshots: list[FileSnapshot] = []
+        file_hashes: dict[str, str] = {}
+        modified_files: list[str] = []
 
         for root, _, files in os.walk(self.root_dir):
-            if ".prometra" in root or ".git" in root or "venv" in root or "__pycache__" in root:
+            if (
+                ".prometra" in root
+                or ".git" in root
+                or "venv" in root
+                or "__pycache__" in root
+            ):
                 continue
 
             for file in files:
@@ -66,7 +73,7 @@ class SnapshotEngine:
                 if self.ignore.should_ignore(rel_path):
                     continue
 
-                try:
+                with contextlib.suppress(OSError, UnicodeDecodeError):
                     with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
                         content = f.read()
 
@@ -74,15 +81,15 @@ class SnapshotEngine:
                     file_hashes[rel_path] = h
                     modified_files.append(rel_path)
 
-                    snapshots.append(FileSnapshot(
-                        path=abs_path,
-                        normalized_path=rel_path,
-                        file_hash=h,
-                        size=len(content),
-                        content=content
-                    ))
-                except Exception:
-                    pass
+                    snapshots.append(
+                        FileSnapshot(
+                            path=abs_path,
+                            normalized_path=rel_path,
+                            file_hash=h,
+                            size=len(content),
+                            content=content,
+                        )
+                    )
 
         # 3. Create Checkpoint object
         cp_id = f"chk-{now.strftime('%Y%m%d-%H%M%S')}-{uuid.uuid4().hex[:4]}"
@@ -100,7 +107,7 @@ class SnapshotEngine:
             file_hashes=file_hashes,
             ai_prompts=ai_prompts_count,
             productivity_score=intelligence_score,
-            summary=summary_text
+            summary=summary_text,
         )
 
         return checkpoint, snapshots

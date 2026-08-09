@@ -1,12 +1,14 @@
 import json
-from typing import Dict, Any
+from typing import Any
+
 from prometra.diff.models import DiffResult
+
 
 class DiffFormatter:
     """Formatter for converting DiffResult into Markdown or JSON outputs."""
 
     @staticmethod
-    def to_dict(result: DiffResult) -> Dict[str, Any]:
+    def to_dict(result: DiffResult) -> dict[str, Any]:
         """Convert DiffResult to exact JSON dictionary structure."""
         return {
             "file": result.file,
@@ -18,7 +20,7 @@ class DiffFormatter:
             "added_lines": result.added_lines,
             "removed_lines": result.removed_lines,
             "modified_lines": result.modified_lines,
-            "diff": result.diff
+            "diff": result.diff,
         }
 
     @staticmethod
@@ -42,6 +44,6 @@ class DiffFormatter:
             "```diff",
             result.diff.strip() if result.diff else "# No changes detected",
             "```",
-            ""
+            "",
         ]
         return "\n".join(lines)
