@@ -211,3 +211,20 @@ def validate():
     else:
         console.print(f"[red]Validation finished with {issues} issues.[/red]")
         raise typer.Exit(1)
+
+
+@app.command("serve")
+def serve(
+    port: int = typer.Option(8000, "--port", "-p", help="Port to listen on."),
+    host: str = typer.Option("localhost", "--host", "-h", help="Host address."),
+):
+    """Start live local Prometra MCP HTTP JSON-RPC Server."""
+    from demo.mcp_server import HTTPServer, MCPRequestHandler
+    console.print(f"[bold green]🚀 Starting Prometra MCP Server on http://{host}:{port}/mcp[/bold green]")
+    server = HTTPServer((host, port), MCPRequestHandler)
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        console.print("[yellow]Stopping MCP Server...[/yellow]")
+        server.server_close()
+
