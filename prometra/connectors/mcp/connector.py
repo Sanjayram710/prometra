@@ -34,8 +34,9 @@ class MCPConnector(BaseConnector):
 
     def initialize(self, config: ConnectorConfig) -> None:
         self._config = config
-        if config.extra_settings and "server_url" in config.extra_settings:
-            self.server_url = config.extra_settings["server_url"]
+        settings = getattr(config, "settings", {}) or {}
+        if isinstance(settings, dict) and "server_url" in settings:
+            self.server_url = settings["server_url"]
 
     def connect(self) -> None:
         self._is_connected = True
